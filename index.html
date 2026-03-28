@@ -545,10 +545,15 @@ function handleFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     uploadedCode = e.target.result;
-    document.getElementById('upload-filename').textContent = `✓ ${file.name} loaded`;
+    document.getElementById('upload-filename').textContent = `✓ ${file.name} loaded (${(file.size/1024).toFixed(1)}KB)`;
+    document.getElementById('error-panel').classList.remove('show');
     const ext = file.name.split('.').pop().toLowerCase();
     const langMap = { py:'python', js:'javascript', ts:'typescript', jsx:'javascript', tsx:'typescript', mjs:'javascript', cjs:'javascript' };
     if (langMap[ext]) document.getElementById('lang-select').value = langMap[ext];
+  };
+  reader.onerror = () => {
+    showError(`Could not read ${file.name}. Please try again.`);
+    uploadedCode = '';
   };
   reader.readAsText(file);
 }
@@ -696,6 +701,7 @@ async function runScan() {
   const activeTab = document.querySelector('.tab.active').dataset.tab;
   let code = '', lang = '';
 
+  // Validate inputs BEFORE touching button state
   if (activeTab === 'paste') {
     code = document.getElementById('code-input').value.trim();
     if (!code) { showError('Please paste some code first.'); return; }
@@ -705,17 +711,18 @@ async function runScan() {
 
   } else if (activeTab === 'upload') {
     code = uploadedCode.trim();
-    if (!code) { showError('Please upload a file first.'); return; }
+    if (!code) {
+      showError('No file loaded yet. Click the upload zone to choose a .py, .js, or .ts file, then click Run AIRA Scan.');
+      return;
+    }
     const sel = document.getElementById('lang-select').value;
     lang = sel === 'auto' ? detectLanguage(code) : sel;
 
   } else if (activeTab === 'github') {
-    try {
-      const result = await getGithubCode();
-      code = result.code;
-      lang = result.lang;
-    } catch(err) {
-      showError(err.message);
+    // For GitHub we need to fetch async — do it after button is in loading state
+    // Validation happens inside getGithubCode()
+    if (githubFiles.length === 0) {
+      showError('Please fetch a GitHub repo first, then click Run AIRA Scan.');
       return;
     }
   }
@@ -744,6 +751,13 @@ async function runScan() {
   const labelInterval = setInterval(() => { labelEl.textContent = labels[li++ % labels.length]; }, 700);
 
   try {
+    // GitHub: fetch file contents now (inside try so button always resets on error)
+    if (activeTab === 'github') {
+      const ghResult = await getGithubCode();
+      code = ghResult.code;
+      lang = ghResult.lang;
+    }
+
     const result = await callAIRAScanner(code, lang);
     clearInterval(labelInterval);
     progress.classList.remove('show');
@@ -826,7 +840,7 @@ IMPORTANT:
 - Include line numbers when identifiable
 - Return ONLY the JSON object, no preamble or explanation`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('/api/scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
