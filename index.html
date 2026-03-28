@@ -391,7 +391,7 @@ def save_record(db, record):
       </select>
       <span class="lang-label">Engine</span>
       <select id="engine-select">
-        <option value="auto">Auto (Gemini + fallback)</option>
+        <option value="auto">Auto (Groq + fallback)</option>
         <option value="gemini">Gemini only</option>
         <option value="heuristic">Local heuristic only</option>
       </select>
@@ -401,7 +401,7 @@ def save_record(db, record):
       </button>
     </div>
     <div class="engine-note">
-      Auto mode uses the server-side Gemini free tier when configured and falls back to a browser-only heuristic scan when it is not.
+      Auto mode routes through Groq first, then any configured cloud fallbacks, and finally the browser-only heuristic scan if all cloud providers are unavailable.
       Results always label which engine actually ran.
     </div>
 
@@ -861,14 +861,21 @@ Keep C07 and C12 as UNKNOWN. Include only grounded findings. Code:
 ${code.slice(0, 30000)}`;
 }
 
-async function callGeminiScanner(code, lang) {
+function providerLabel(provider) {
+  if (provider === 'groq') return 'Groq structured scan';
+  if (provider === 'openrouter') return 'OpenRouter structured scan';
+  if (provider === 'gemini') return 'Gemini structured scan';
+  return 'Cloud structured scan';
+}
+
+async function callCloudScanner(code, lang, provider) {
   const systemPrompt = `You are AIRA — the AI-Induced Risk Audit scanner v1.2.
 You audit code for truthful failure handling. Return JSON only.`;
   const response = await fetch('/api/scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gemini-2.5-flash',
+      provider,
       system: systemPrompt,
       prompt: buildPromptForModel(code, lang)
     })
@@ -884,12 +891,12 @@ You audit code for truthful failure handling. Return JSON only.`;
 
   try {
     return normalizeScannerResult(JSON.parse(clean), {
-      engine: 'gemini',
-      engine_label: 'Gemini structured scan',
-      note: 'Server-side Gemini analysis via the free-tier proxy.'
+      engine: data.provider || provider || 'cloud',
+      engine_label: providerLabel(data.provider || provider),
+      note: `Server-side routed analysis via ${providerLabel(data.provider || provider).replace(' structured scan', '')}.`
     });
   } catch {
-    throw new Error('Could not parse Gemini scanner response.');
+    throw new Error('Could not parse cloud scanner response.');
   }
 }
 
@@ -904,17 +911,18 @@ async function callAIRAScanner(code, lang) {
   }
 
   try {
-    return await callGeminiScanner(code, lang);
+    const provider = engine === 'gemini' ? 'gemini' : 'auto';
+    return await callCloudScanner(code, lang, provider);
   } catch (err) {
     if (engine === 'gemini') {
       throw err;
     }
 
-    showToast('Gemini unavailable. Falling back to the free local heuristic scan.', 'success');
+    showToast('Cloud routing unavailable. Falling back to the free local heuristic scan.', 'success');
     return buildHeuristicResult(code, lang, {
       engine: 'heuristic',
       engine_label: 'Local heuristic fallback',
-      note: 'Gemini was unavailable, so this result comes from deterministic browser heuristics.'
+      note: 'All configured cloud providers were unavailable, so this result comes from deterministic browser heuristics.'
     });
   }
 }

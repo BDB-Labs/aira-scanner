@@ -52,7 +52,11 @@ Actively collecting additional results.
 
 The scanner now supports:
 
-- `Auto` mode: uses the server-side Gemini proxy when `GEMINI_API_KEY` or `GOOGLE_API_KEY` is configured
+- `Auto` mode: routes through Groq first, then any configured fallbacks
+- optional cloud providers:
+  - `GROQ_API_KEY` with optional `GROQ_MODEL`
+  - `GEMINI_API_KEY` or `GOOGLE_API_KEY` with optional `GEMINI_MODEL`
+  - `OPENROUTER_API_KEY` with `OPENROUTER_MODEL`
 - `Local heuristic` fallback: browser-only deterministic checks when the model proxy is unavailable
 - research submission through a server-side Airtable proxy when `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE`, and `AIRTABLE_TOKEN` are configured
 
