@@ -47,3 +47,13 @@ This tool is intended to **measure and surface these patterns**, not to assume t
 Early-stage research tool.  
 Initial dataset included.  
 Actively collecting additional results.
+
+## Runtime Notes
+
+The scanner now supports:
+
+- `Auto` mode: uses the server-side Gemini proxy when `GEMINI_API_KEY` or `GOOGLE_API_KEY` is configured
+- `Local heuristic` fallback: browser-only deterministic checks when the model proxy is unavailable
+- research submission through a server-side Airtable proxy when `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE`, and `AIRTABLE_TOKEN` are configured
+
+No Airtable token is exposed in the browser.

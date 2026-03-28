@@ -34,9 +34,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 html { scroll-behavior: smooth; }
-
 body {
   background: var(--bg);
   color: var(--text);
@@ -46,7 +44,6 @@ body {
   min-height: 100vh;
 }
 
-/* ── NOISE TEXTURE ── */
 body::before {
   content: '';
   position: fixed;
@@ -59,7 +56,8 @@ body::before {
 
 /* ── HEADER ── */
 header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 10;
   border-bottom: 1px solid var(--border);
   padding: 0 2rem;
@@ -69,768 +67,232 @@ header {
   align-items: center;
   justify-content: space-between;
   height: 64px;
-  position: sticky;
-  top: 0;
 }
-
-.header-brand {
-  display: flex;
-  align-items: baseline;
-  gap: 1rem;
-}
-
-.header-logo {
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: var(--white);
-  letter-spacing: -0.02em;
-}
-
+.header-brand { display: flex; align-items: baseline; gap: 1rem; }
+.header-logo { font-family: var(--mono); font-weight: 600; font-size: 1.1rem; color: var(--white); letter-spacing: -0.02em; }
 .header-logo span { color: var(--accent2); }
-
-.header-sub {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.header-links {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-}
-
-.header-links a {
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--text-dim);
-  text-decoration: none;
-  letter-spacing: 0.04em;
-  transition: color 0.2s;
-}
+.header-sub { font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; }
+.header-links { display: flex; gap: 1.5rem; align-items: center; }
+.header-links a { font-family: var(--mono); font-size: 0.78rem; color: var(--text-dim); text-decoration: none; letter-spacing: 0.04em; transition: color 0.2s; }
 .header-links a:hover { color: var(--accent2); }
-
-.badge-v {
-  font-family: var(--mono);
-  font-size: 0.65rem;
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  color: var(--text-dim);
-  padding: 2px 8px;
-  border-radius: 20px;
-  letter-spacing: 0.06em;
-}
+.badge-v { font-family: var(--mono); font-size: 0.65rem; background: var(--bg3); border: 1px solid var(--border2); color: var(--text-dim); padding: 2px 8px; border-radius: 20px; letter-spacing: 0.06em; }
 
 /* ── HERO ── */
-.hero {
-  position: relative;
-  z-index: 1;
-  padding: 5rem 2rem 3rem;
-  max-width: 900px;
-  margin: 0 auto;
-  text-align: left;
-}
-
-.hero-eyebrow {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--accent2);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  margin-bottom: 1.2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.hero-eyebrow::before {
-  content: '';
-  display: inline-block;
-  width: 24px;
-  height: 1px;
-  background: var(--accent2);
-}
-
-h1 {
-  font-family: var(--display);
-  font-size: clamp(2.8rem, 6vw, 4.5rem);
-  font-weight: 900;
-  color: var(--white);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  margin-bottom: 1.5rem;
-}
-
-h1 em {
-  font-style: italic;
-  color: var(--accent2);
-}
-
-.hero-thesis {
-  font-family: var(--serif);
-  font-size: 1.05rem;
-  font-weight: 300;
-  color: var(--text);
-  line-height: 1.8;
-  max-width: 680px;
-  padding: 1.2rem 1.5rem;
-  border-left: 3px solid var(--accent);
-  background: rgba(31,111,235,0.06);
-  border-radius: 0 4px 4px 0;
-  margin-bottom: 2.5rem;
-  font-style: italic;
-}
-
-.hero-stats {
-  display: flex;
-  gap: 2rem;
-  margin-bottom: 1rem;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-num {
-  font-family: var(--mono);
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--white);
-  line-height: 1;
-}
-
-.stat-label {
-  font-family: var(--mono);
-  font-size: 0.65rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-top: 0.2rem;
-}
+.hero { position: relative; z-index: 1; padding: 5rem 2rem 3rem; max-width: 900px; margin: 0 auto; text-align: left; }
+.hero-eyebrow { font-family: var(--mono); font-size: 0.72rem; color: var(--accent2); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.6rem; }
+.hero-eyebrow::before { content: ''; display: inline-block; width: 24px; height: 1px; background: var(--accent2); }
+h1 { font-family: var(--display); font-size: clamp(2.8rem, 6vw, 4.5rem); font-weight: 900; color: var(--white); line-height: 1.05; letter-spacing: -0.03em; margin-bottom: 1.5rem; }
+h1 em { font-style: italic; color: var(--accent2); }
+.hero-thesis { font-family: var(--serif); font-size: 1.05rem; font-weight: 300; color: var(--text); line-height: 1.8; max-width: 680px; padding: 1.2rem 1.5rem; border-left: 3px solid var(--accent); background: rgba(31,111,235,0.06); border-radius: 0 4px 4px 0; margin-bottom: 2.5rem; font-style: italic; }
+.hero-stats { display: flex; gap: 2rem; margin-bottom: 1rem; }
+.stat { display: flex; flex-direction: column; }
+.stat-num { font-family: var(--mono); font-size: 1.6rem; font-weight: 600; color: var(--white); line-height: 1; }
+.stat-label { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.2rem; }
 
 /* ── SCANNER CARD ── */
-.scanner-wrap {
-  position: relative;
-  z-index: 1;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0 2rem 4rem;
-}
-
-.scanner-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
-}
+.scanner-wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 0 2rem 4rem; }
+.scanner-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.5); }
 
 /* Tab bar */
-.tab-bar {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-  padding: 0 1.5rem;
-}
-
-.tab {
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--text-dim);
-  padding: 0.8rem 1rem;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  letter-spacing: 0.04em;
-  user-select: none;
-}
-
+.tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--bg); padding: 0 1.5rem; }
+.tab { font-family: var(--mono); font-size: 0.78rem; color: var(--text-dim); padding: 0.8rem 1rem; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; letter-spacing: 0.04em; user-select: none; }
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
 
-/* Editor area */
-.editor-area {
-  padding: 1.5rem;
-}
-
+/* Editor areas */
+.editor-area { padding: 1.5rem; }
 .editor-area.hidden { display: none; }
-
-.editor-label {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 0.6rem;
-}
+.editor-label { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.6rem; }
 
 textarea#code-input {
-  width: 100%;
-  height: 320px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 0.82rem;
-  line-height: 1.7;
-  padding: 1rem 1.2rem;
-  resize: vertical;
-  outline: none;
-  transition: border-color 0.2s;
+  width: 100%; height: 320px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); font-family: var(--mono); font-size: 0.82rem; line-height: 1.7;
+  padding: 1rem 1.2rem; resize: vertical; outline: none; transition: border-color 0.2s;
 }
-
 textarea#code-input:focus { border-color: var(--accent); }
 textarea#code-input::placeholder { color: var(--text-muted); }
 
 /* Upload area */
-.upload-zone {
-  border: 2px dashed var(--border2);
-  border-radius: 6px;
-  padding: 3rem 2rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: var(--bg);
-}
-
-.upload-zone:hover, .upload-zone.drag-over {
-  border-color: var(--accent);
-  background: rgba(31,111,235,0.04);
-}
-
-.upload-icon {
-  font-size: 2rem;
-  margin-bottom: 0.8rem;
-  opacity: 0.6;
-}
-
-.upload-label {
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  margin-bottom: 0.4rem;
-}
-
-.upload-sub {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.upload-filename {
-  font-family: var(--mono);
-  font-size: 0.8rem;
-  color: var(--green);
-  margin-top: 0.8rem;
-}
-
+.upload-zone { border: 2px dashed var(--border2); border-radius: 6px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg); }
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: rgba(31,111,235,0.04); }
+.upload-icon { font-size: 2rem; margin-bottom: 0.8rem; opacity: 0.6; }
+.upload-label { font-family: var(--mono); font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.4rem; }
+.upload-sub { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); }
+.upload-filename { font-family: var(--mono); font-size: 0.8rem; color: var(--green); margin-top: 0.8rem; }
 input#file-input { display: none; }
 
-/* Language selector */
-.controls-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
+/* GitHub URL input */
+.github-input-wrap { display: flex; flex-direction: column; gap: 0.8rem; }
+.github-url-row { display: flex; gap: 0.6rem; }
+.github-url-input {
+  flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); font-family: var(--mono); font-size: 0.82rem;
+  padding: 0.7rem 1rem; outline: none; transition: border-color 0.2s;
 }
+.github-url-input:focus { border-color: var(--accent); }
+.github-url-input::placeholder { color: var(--text-muted); }
+.github-fetch-btn {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em;
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text-dim);
+  padding: 0.7rem 1.2rem; border-radius: 4px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.github-fetch-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.github-fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.github-status { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); min-height: 1.2rem; }
+.github-status.ok { color: var(--green); }
+.github-status.err { color: var(--red); }
+.github-file-list { display: flex; flex-direction: column; gap: 0.4rem; max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 4px; padding: 0.6rem; background: var(--bg); }
+.github-file-item { display: flex; align-items: center; gap: 0.6rem; font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 3px; transition: background 0.15s; }
+.github-file-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.github-file-item input[type=checkbox] { accent-color: var(--accent2); cursor: pointer; }
+.github-file-item.selected { color: var(--accent2); }
+.github-select-hint { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); padding: 0.3rem 0.4rem; }
 
-.lang-label {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-select#lang-select {
-  font-family: var(--mono);
-  font-size: 0.8rem;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  color: var(--text);
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  outline: none;
-  cursor: pointer;
-}
+/* Controls row */
+.controls-row { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border); background: var(--bg); flex-wrap: wrap; }
+.lang-label { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+select#lang-select { font-family: var(--mono); font-size: 0.8rem; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); padding: 0.4rem 0.8rem; border-radius: 4px; outline: none; cursor: pointer; }
+select#engine-select { font-family: var(--mono); font-size: 0.8rem; background: var(--bg2); border: 1px solid var(--border2); color: var(--text); padding: 0.4rem 0.8rem; border-radius: 4px; outline: none; cursor: pointer; }
+.engine-note { padding: 0 1.5rem 1rem; background: var(--bg); font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.03em; }
 
 .scan-btn {
-  margin-left: auto;
-  font-family: var(--mono);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: var(--accent);
-  color: white;
-  border: none;
-  padding: 0.6rem 1.8rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  margin-left: auto; font-family: var(--mono); font-size: 0.82rem; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; background: var(--accent); color: white;
+  border: none; padding: 0.6rem 1.8rem; border-radius: 4px; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem;
 }
-
 .scan-btn:hover { background: var(--accent2); transform: translateY(-1px); }
 .scan-btn:active { transform: translateY(0); }
 .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-.scan-btn .spinner {
-  display: none;
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
+.scan-btn .spinner { display: none; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
 .scan-btn.loading .spinner { display: block; }
 .scan-btn.loading .btn-text { opacity: 0.7; }
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── RESULTS ── */
 #results { display: none; }
 
-.results-header {
-  padding: 1.5rem;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-}
+.results-header { padding: 1.5rem; border-top: 1px solid var(--border); background: var(--bg); }
+.results-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.results-title { font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.12em; }
 
-.results-title {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 1rem;
+/* Result action buttons */
+.result-actions { display: flex; gap: 0.5rem; }
+.result-action-btn {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim);
+  background: var(--bg3); border: 1px solid var(--border2);
+  padding: 0.3rem 0.8rem; border-radius: 3px; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; gap: 0.4rem;
+  text-decoration: none;
 }
+.result-action-btn:hover { color: var(--accent2); border-color: var(--accent2); }
 
-.check-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-}
+.check-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; margin-bottom: 1rem; }
+@media (max-width: 600px) { .check-grid { grid-template-columns: repeat(3, 1fr); } }
+.check-pill { font-family: var(--mono); font-size: 0.62rem; padding: 0.35rem 0.5rem; border-radius: 4px; text-align: center; letter-spacing: 0.04em; line-height: 1.3; }
+.check-pill.pass { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.2); }
+.check-pill.fail { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,81,73,0.2); }
+.check-pill.unknown { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(210,153,34,0.2); }
 
-@media (max-width: 600px) {
-  .check-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-.check-pill {
-  font-family: var(--mono);
-  font-size: 0.62rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: 4px;
-  text-align: center;
-  letter-spacing: 0.04em;
-  line-height: 1.3;
-}
-
-.check-pill.pass {
-  background: var(--green-bg);
-  color: var(--green);
-  border: 1px solid rgba(63,185,80,0.2);
-}
-
-.check-pill.fail {
-  background: var(--red-bg);
-  color: var(--red);
-  border: 1px solid rgba(248,81,73,0.2);
-}
-
-.check-pill.unknown {
-  background: var(--yellow-bg);
-  color: var(--yellow);
-  border: 1px solid rgba(210,153,34,0.2);
-}
-
-.severity-row {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-}
-
-.sev-badge {
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
+.severity-row { display: flex; gap: 1.5rem; align-items: center; }
+.sev-badge { font-family: var(--mono); font-size: 0.75rem; font-weight: 600; }
 .sev-badge.high { color: var(--red); }
 .sev-badge.medium { color: var(--yellow); }
 .sev-badge.low { color: var(--text-dim); }
+.scan-meta { margin-top: 0.8rem; display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+.scan-meta-badge { font-family: var(--mono); font-size: 0.68rem; color: var(--accent2); border: 1px solid rgba(56,139,253,0.25); background: rgba(56,139,253,0.08); padding: 0.25rem 0.55rem; border-radius: 999px; letter-spacing: 0.05em; text-transform: uppercase; }
+.scan-meta-note { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); }
 
 /* Findings list */
-.findings-list {
-  border-top: 1px solid var(--border);
-}
-
-.finding-group-header {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--accent2);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 0.8rem 1.5rem 0.4rem;
-  background: rgba(31,111,235,0.04);
-  border-bottom: 1px solid var(--border);
-}
-
-.finding-item {
-  padding: 0.9rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.8rem;
-  align-items: start;
-  transition: background 0.15s;
-}
-
+.findings-list { border-top: 1px solid var(--border); }
+.finding-group-header { font-family: var(--mono); font-size: 0.72rem; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.1em; padding: 0.8rem 1.5rem 0.4rem; background: rgba(31,111,235,0.04); border-bottom: 1px solid var(--border); }
+.finding-item { padding: 0.9rem 1.5rem; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: auto 1fr; gap: 0.8rem; align-items: start; transition: background 0.15s; }
 .finding-item:hover { background: rgba(255,255,255,0.02); }
+.finding-sev { font-family: var(--mono); font-size: 0.62rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 3px; letter-spacing: 0.06em; white-space: nowrap; margin-top: 1px; }
+.finding-sev.HIGH { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+.finding-sev.MEDIUM { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
+.finding-sev.LOW { background: var(--bg3); color: var(--text-dim); border: 1px solid var(--border); }
+.finding-location { font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.2rem; }
+.finding-desc { font-family: var(--serif); font-size: 0.88rem; color: var(--text); line-height: 1.5; }
+.finding-snippet { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: 3px; padding: 0.3rem 0.6rem; margin-top: 0.4rem; display: inline-block; }
 
-.finding-sev {
-  font-family: var(--mono);
-  font-size: 0.62rem;
-  font-weight: 600;
-  padding: 0.2rem 0.5rem;
-  border-radius: 3px;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-  margin-top: 1px;
-}
-
-.finding-sev.HIGH {
-  background: var(--red-bg);
-  color: var(--red);
-  border: 1px solid var(--red-border);
-}
-
-.finding-sev.MEDIUM {
-  background: var(--yellow-bg);
-  color: var(--yellow);
-  border: 1px solid rgba(210,153,34,0.3);
-}
-
-.finding-sev.LOW {
-  background: var(--bg3);
-  color: var(--text-dim);
-  border: 1px solid var(--border);
-}
-
-.finding-body {}
-
-.finding-location {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  margin-bottom: 0.2rem;
-}
-
-.finding-desc {
-  font-family: var(--serif);
-  font-size: 0.88rem;
-  color: var(--text);
-  line-height: 1.5;
-}
-
-.finding-snippet {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 0.3rem 0.6rem;
-  margin-top: 0.4rem;
-  display: inline-block;
-}
-
-/* Empty state */
-.no-findings {
-  padding: 2.5rem 1.5rem;
-  text-align: center;
-  border-top: 1px solid var(--border);
-}
-
+.no-findings { padding: 2.5rem 1.5rem; text-align: center; border-top: 1px solid var(--border); }
 .no-findings-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-.no-findings-title {
-  font-family: var(--mono);
-  color: var(--green);
-  font-size: 0.9rem;
-  margin-bottom: 0.3rem;
-}
-
-.no-findings-sub {
-  font-family: var(--serif);
-  font-size: 0.82rem;
-  color: var(--text-dim);
-  font-style: italic;
-}
+.no-findings-title { font-family: var(--mono); color: var(--green); font-size: 0.9rem; margin-bottom: 0.3rem; }
+.no-findings-sub { font-family: var(--serif); font-size: 0.82rem; color: var(--text-dim); font-style: italic; }
 
 /* ── RESEARCH OPT-IN ── */
-.research-panel {
-  display: none;
-  margin: 1.5rem;
-  padding: 1.2rem 1.5rem;
-  background: rgba(31,111,235,0.05);
-  border: 1px solid rgba(31,111,235,0.2);
-  border-radius: 6px;
-}
-
+.research-panel { display: none; margin: 1.5rem; padding: 1.2rem 1.5rem; background: rgba(31,111,235,0.05); border: 1px solid rgba(31,111,235,0.2); border-radius: 6px; }
 .research-panel.show { display: block; }
-
-.research-title {
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  color: var(--accent2);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 0.5rem;
-}
-
-.research-body {
-  font-family: var(--serif);
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  line-height: 1.6;
-  margin-bottom: 1rem;
-  font-style: italic;
-}
-
-.research-actions {
-  display: flex;
-  gap: 0.8rem;
-  align-items: center;
-}
-
-.research-btn {
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  padding: 0.45rem 1.2rem;
-  border-radius: 4px;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
-}
-
-.research-btn.primary {
-  background: var(--accent);
-  color: white;
-}
+.research-title { font-family: var(--mono); font-size: 0.75rem; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+.research-body { font-family: var(--serif); font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 1rem; font-style: italic; }
+.research-actions { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; }
+.research-btn { font-family: var(--mono); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; padding: 0.45rem 1.2rem; border-radius: 4px; cursor: pointer; border: none; transition: all 0.2s; }
+.research-btn.primary { background: var(--accent); color: white; }
 .research-btn.primary:hover { background: var(--accent2); }
-
-.research-btn.ghost {
-  background: transparent;
-  color: var(--text-dim);
-  border: 1px solid var(--border2);
-}
+.research-btn.ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border2); }
 .research-btn.ghost:hover { color: var(--text); border-color: var(--text-dim); }
+.research-success { font-family: var(--mono); font-size: 0.78rem; color: var(--green); display: none; }
 
-.research-success {
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--green);
-  display: none;
-}
+/* ── SHARE PANEL ── */
+.share-panel { display: none; margin: 0 1.5rem 1.5rem; padding: 1rem 1.2rem; background: rgba(56,139,253,0.04); border: 1px solid rgba(56,139,253,0.15); border-radius: 6px; }
+.share-panel.show { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+.share-label { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+.share-url { flex: 1; font-family: var(--mono); font-size: 0.72rem; color: var(--accent2); background: var(--bg); border: 1px solid var(--border); border-radius: 3px; padding: 0.35rem 0.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.share-copy-btn { font-family: var(--mono); font-size: 0.72rem; background: var(--bg3); border: 1px solid var(--border2); color: var(--text-dim); padding: 0.35rem 0.8rem; border-radius: 3px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.share-copy-btn:hover { color: var(--green); border-color: var(--green); }
+.share-copy-btn.copied { color: var(--green); border-color: var(--green); }
 
-/* ── ABOUT SECTION ── */
-.about-section {
-  position: relative;
-  z-index: 1;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 2rem 6rem;
-  border-top: 1px solid var(--border);
-}
-
-.about-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  margin-top: 2rem;
-}
-
-@media (max-width: 640px) {
-  .about-grid { grid-template-columns: 1fr; gap: 2rem; }
-  .hero-stats { flex-wrap: wrap; gap: 1.2rem; }
-  .check-grid { grid-template-columns: repeat(3, 1fr); }
-  h1 { font-size: 2.4rem; }
-}
-
-.about-block-title {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--accent2);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 0.8rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.about-block-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-.about-block-body {
-  font-family: var(--serif);
-  font-size: 0.88rem;
-  color: var(--text-dim);
-  line-height: 1.8;
-}
-
-.checks-mini-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.checks-mini-list li {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  display: flex;
-  gap: 0.6rem;
-}
-
-.checks-mini-list .cid {
-  color: var(--red);
-  width: 28px;
-  flex-shrink: 0;
-}
-
-.checks-mini-list .human-review {
-  color: var(--yellow);
-}
+/* ── ABOUT ── */
+.about-section { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 2rem 2rem 6rem; border-top: 1px solid var(--border); }
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-top: 2rem; }
+@media (max-width: 640px) { .about-grid { grid-template-columns: 1fr; gap: 2rem; } .hero-stats { flex-wrap: wrap; gap: 1.2rem; } .check-grid { grid-template-columns: repeat(3, 1fr); } h1 { font-size: 2.4rem; } }
+.about-block-title { font-family: var(--mono); font-size: 0.7rem; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+.about-block-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.about-block-body { font-family: var(--serif); font-size: 0.88rem; color: var(--text-dim); line-height: 1.8; }
+.checks-mini-list { list-style: none; display: flex; flex-direction: column; gap: 0.3rem; }
+.checks-mini-list li { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); display: flex; gap: 0.6rem; }
+.checks-mini-list .cid { color: var(--red); width: 28px; flex-shrink: 0; }
+.checks-mini-list .human-review { color: var(--yellow); }
 
 /* ── FOOTER ── */
-footer {
-  position: relative;
-  z-index: 1;
-  border-top: 1px solid var(--border);
-  padding: 1.5rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.footer-brand {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.footer-brand a {
-  color: var(--text-dim);
-  text-decoration: none;
-}
-
+footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+.footer-brand { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); }
+.footer-brand a { color: var(--text-dim); text-decoration: none; }
 .footer-brand a:hover { color: var(--accent2); }
-
-.footer-links {
-  display: flex;
-  gap: 1.5rem;
-}
-
-.footer-links a {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
+.footer-links { display: flex; gap: 1.5rem; }
+.footer-links a { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
 .footer-links a:hover { color: var(--accent2); }
 
-/* ── LOADING STATE ── */
-.scan-progress {
-  display: none;
-  padding: 2rem 1.5rem;
-  border-top: 1px solid var(--border);
-  text-align: center;
-}
-
+/* ── LOADING ── */
+.scan-progress { display: none; padding: 2rem 1.5rem; border-top: 1px solid var(--border); text-align: center; }
 .scan-progress.show { display: block; }
-
-.progress-label {
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--text-dim);
-  margin-bottom: 1rem;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
+.progress-label { font-family: var(--mono); font-size: 0.78rem; color: var(--text-dim); margin-bottom: 1rem; animation: pulse 1.5s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.progress-bar-wrap { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; height: 4px; overflow: hidden; max-width: 400px; margin: 0 auto; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; animation: progress 2s ease-in-out infinite; }
+@keyframes progress { 0% { width: 0%; margin-left: 0; } 50% { width: 70%; margin-left: 15%; } 100% { width: 0%; margin-left: 100%; } }
 
-.progress-bar-wrap {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  height: 4px;
-  overflow: hidden;
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  border-radius: 4px;
-  animation: progress 2s ease-in-out infinite;
-}
-
-@keyframes progress {
-  0% { width: 0%; margin-left: 0; }
-  50% { width: 70%; margin-left: 15%; }
-  100% { width: 0%; margin-left: 100%; }
-}
-
-/* ── ERROR STATE ── */
-.error-panel {
-  display: none;
-  margin: 1.5rem;
-  padding: 1rem 1.2rem;
-  background: var(--red-bg);
-  border: 1px solid var(--red-border);
-  border-radius: 4px;
-  font-family: var(--mono);
-  font-size: 0.8rem;
-  color: var(--red);
-}
-
+/* ── ERROR ── */
+.error-panel { display: none; margin: 1.5rem; padding: 1rem 1.2rem; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 4px; font-family: var(--mono); font-size: 0.8rem; color: var(--red); }
 .error-panel.show { display: block; }
 
-/* ── FADE IN ── */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 .hero { animation: fadeUp 0.6s ease both; }
 .scanner-wrap { animation: fadeUp 0.6s 0.1s ease both; }
 .about-section { animation: fadeUp 0.6s 0.2s ease both; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-family: var(--mono); font-size: 0.78rem; padding: 0.7rem 1.2rem; border-radius: 6px; z-index: 999; opacity: 0; transform: translateY(8px); transition: all 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { border-color: var(--green); color: var(--green); }
 </style>
 </head>
 <body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
 <!-- HEADER -->
 <header>
@@ -856,22 +318,10 @@ footer {
     not from incompetence, but from incentive alignment.
   </p>
   <div class="hero-stats">
-    <div class="stat">
-      <span class="stat-num">15</span>
-      <span class="stat-label">Audit Checks</span>
-    </div>
-    <div class="stat">
-      <span class="stat-num">13</span>
-      <span class="stat-label">Automated</span>
-    </div>
-    <div class="stat">
-      <span class="stat-num">2</span>
-      <span class="stat-label">Languages</span>
-    </div>
-    <div class="stat">
-      <span class="stat-num">Free</span>
-      <span class="stat-label">Always</span>
-    </div>
+    <div class="stat"><span class="stat-num">15</span><span class="stat-label">Audit Checks</span></div>
+    <div class="stat"><span class="stat-num">13</span><span class="stat-label">Automated</span></div>
+    <div class="stat"><span class="stat-num">3</span><span class="stat-label">Input Modes</span></div>
+    <div class="stat"><span class="stat-num">Free</span><span class="stat-label">Always</span></div>
   </div>
 </section>
 
@@ -883,6 +333,7 @@ footer {
     <div class="tab-bar">
       <div class="tab active" data-tab="paste">Paste Code</div>
       <div class="tab" data-tab="upload">Upload File</div>
+      <div class="tab" data-tab="github">GitHub Repo</div>
     </div>
 
     <!-- Paste area -->
@@ -912,6 +363,23 @@ def save_record(db, record):
       <input type="file" id="file-input" accept=".py,.js,.ts,.jsx,.tsx,.mjs,.cjs">
     </div>
 
+    <!-- GitHub area -->
+    <div class="editor-area hidden" id="tab-github">
+      <div class="editor-label">GitHub Repository URL</div>
+      <div class="github-input-wrap">
+        <div class="github-url-row">
+          <input type="text" class="github-url-input" id="github-url"
+            placeholder="https://github.com/owner/repo  or  owner/repo">
+          <button class="github-fetch-btn" id="github-fetch-btn" onclick="fetchGithubFiles()">
+            Fetch Files
+          </button>
+        </div>
+        <div class="github-status" id="github-status"></div>
+        <div class="github-file-list hidden" id="github-file-list"></div>
+        <div class="github-select-hint hidden" id="github-select-hint"></div>
+      </div>
+    </div>
+
     <!-- Controls -->
     <div class="controls-row">
       <span class="lang-label">Language</span>
@@ -921,10 +389,20 @@ def save_record(db, record):
         <option value="javascript">JavaScript</option>
         <option value="typescript">TypeScript</option>
       </select>
+      <span class="lang-label">Engine</span>
+      <select id="engine-select">
+        <option value="auto">Auto (Gemini + fallback)</option>
+        <option value="gemini">Gemini only</option>
+        <option value="heuristic">Local heuristic only</option>
+      </select>
       <button class="scan-btn" id="scan-btn" onclick="runScan()">
         <div class="spinner"></div>
         <span class="btn-text">Run AIRA Scan</span>
       </button>
+    </div>
+    <div class="engine-note">
+      Auto mode uses the server-side Gemini free tier when configured and falls back to a browser-only heuristic scan when it is not.
+      Results always label which engine actually ran.
     </div>
 
     <!-- Loading -->
@@ -941,9 +419,27 @@ def save_record(db, record):
 
       <!-- Summary header -->
       <div class="results-header">
-        <div class="results-title">Scan Results</div>
+        <div class="results-title-row">
+          <div class="results-title">Scan Results</div>
+          <div class="result-actions">
+            <button class="result-action-btn" onclick="copyShareLink()" title="Copy shareable link">
+              🔗 Share
+            </button>
+            <button class="result-action-btn" onclick="exportPDF()" title="Export as PDF report">
+              ↓ PDF Report
+            </button>
+          </div>
+        </div>
         <div class="check-grid" id="check-grid"></div>
         <div class="severity-row" id="severity-row"></div>
+        <div class="scan-meta" id="scan-meta"></div>
+      </div>
+
+      <!-- Share panel -->
+      <div class="share-panel" id="share-panel">
+        <span class="share-label">Shareable link</span>
+        <span class="share-url" id="share-url"></span>
+        <button class="share-copy-btn" id="share-copy-btn" onclick="copyShareLinkFromPanel()">Copy</button>
       </div>
 
       <!-- Research opt-in -->
@@ -952,6 +448,7 @@ def save_record(db, record):
         <div class="research-body">
           AIRA is building the first empirical dataset of training-induced failure patterns in AI-generated code.
           Your anonymized scan results (check outcomes only — no source code) can contribute to this research.
+          Submissions now go through a server-side env-var backed proxy so no Airtable secret is exposed in the browser.
         </div>
         <div class="research-actions">
           <button class="research-btn primary" onclick="submitResearch()">Submit Anonymized Results</button>
@@ -965,7 +462,7 @@ def save_record(db, record):
 
       <!-- Human review notice -->
       <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--border); background: var(--yellow-bg);">
-        <p style="font-family: var(--mono); font-size: 0.7rem; color: var(--yellow); letter-spacing: 0.06em;">
+        <p style="font-family:var(--mono); font-size:0.7rem; color:var(--yellow); letter-spacing:0.06em;">
           ⚠ C07 (Parallel Logic Drift) and C12 (Source-to-Output Lineage) require human review and cannot be automated.
         </p>
       </div>
@@ -1024,15 +521,11 @@ def save_record(db, record):
 </footer>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────
-// Replace with your Airtable details
-const AIRTABLE_BASE_ID = 'YOUR_BASE_ID';
-const AIRTABLE_TABLE   = 'AIRA Research';
-const AIRTABLE_TOKEN   = 'YOUR_AIRTABLE_PAT'; // set this server-side ideally
-
 // ── STATE ───────────────────────────────────────────────────────
-let uploadedCode = '';
-let lastResult   = null;
+let uploadedCode    = '';
+let lastResult      = null;
+let githubFiles     = [];   // [{path, url, selected}]
+let githubFetched   = {};   // path → content cache
 
 // ── TABS ────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(tab => {
@@ -1040,8 +533,9 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     const which = tab.dataset.tab;
-    document.getElementById('tab-paste').classList.toggle('hidden', which !== 'paste');
-    document.getElementById('tab-upload').classList.toggle('hidden', which !== 'upload');
+    ['paste','upload','github'].forEach(id => {
+      document.getElementById('tab-' + id).classList.toggle('hidden', id !== which);
+    });
   });
 });
 
@@ -1050,46 +544,166 @@ const uploadZone = document.getElementById('upload-zone');
 const fileInput  = document.getElementById('file-input');
 
 uploadZone.addEventListener('click', () => fileInput.click());
-
-uploadZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  uploadZone.classList.add('drag-over');
-});
-
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-
 uploadZone.addEventListener('drop', e => {
-  e.preventDefault();
-  uploadZone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
 });
-
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) handleFile(fileInput.files[0]);
-});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
 
 function handleFile(file) {
-  if (file.size > 512000) {
-    showError('File too large — maximum 500KB.');
-    return;
-  }
+  if (file.size > 512000) { showError('File too large — maximum 500KB.'); return; }
   const reader = new FileReader();
   reader.onload = e => {
     uploadedCode = e.target.result;
-    document.getElementById('upload-filename').textContent = `✓ ${file.name} loaded`;
-    // Auto-detect language from extension
+    document.getElementById('upload-filename').textContent = `✓ ${file.name} loaded (${(file.size/1024).toFixed(1)}KB)`;
+    document.getElementById('error-panel').classList.remove('show');
     const ext = file.name.split('.').pop().toLowerCase();
-    const langMap = { py: 'python', js: 'javascript', ts: 'typescript',
-                      jsx: 'javascript', tsx: 'typescript', mjs: 'javascript', cjs: 'javascript' };
+    const langMap = { py:'python', js:'javascript', ts:'typescript', jsx:'javascript', tsx:'typescript', mjs:'javascript', cjs:'javascript' };
     if (langMap[ext]) document.getElementById('lang-select').value = langMap[ext];
+  };
+  reader.onerror = () => {
+    showError(`Could not read ${file.name}. Please try again.`);
+    uploadedCode = '';
   };
   reader.readAsText(file);
 }
 
+// ── GITHUB REPO SCANNER ─────────────────────────────────────────
+function parseGithubUrl(raw) {
+  raw = raw.trim();
+  // Accept full URL or shorthand owner/repo
+  const match = raw.match(/github\.com\/([^/]+\/[^/\s?#]+)/);
+  if (match) return match[1];
+  if (/^[\w.-]+\/[\w.-]+$/.test(raw)) return raw;
+  return null;
+}
+
+async function fetchGithubFiles() {
+  const urlInput = document.getElementById('github-url').value;
+  const repo = parseGithubUrl(urlInput);
+  if (!repo) {
+    setGithubStatus('Invalid URL. Use: https://github.com/owner/repo', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('github-fetch-btn');
+  btn.disabled = true;
+  btn.textContent = 'Fetching…';
+  setGithubStatus('Fetching repository tree…', '');
+
+  try {
+    // Get default branch
+    const repoRes = await fetch(`https://api.github.com/repos/${repo}`, {
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!repoRes.ok) throw new Error(repoRes.status === 404 ? 'Repository not found or private.' : `GitHub API error: ${repoRes.status}`);
+    const repoData = await repoRes.json();
+    const branch = repoData.default_branch || 'main';
+
+    // Get tree
+    const treeRes = await fetch(`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`, {
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (!treeRes.ok) throw new Error(`Could not fetch tree: ${treeRes.status}`);
+    const tree = await treeRes.json();
+
+    // Filter to scannable files ≤ 200KB
+    const scannable = (tree.tree || []).filter(f =>
+      f.type === 'blob' &&
+      f.size < 204800 &&
+      /\.(py|js|ts|jsx|tsx|mjs|cjs)$/.test(f.path)
+    );
+
+    if (scannable.length === 0) {
+      setGithubStatus('No scannable Python/JS/TS files found in this repo.', 'err');
+      btn.disabled = false; btn.textContent = 'Fetch Files';
+      return;
+    }
+
+    githubFiles = scannable.map(f => ({
+      path: f.path,
+      url: `https://raw.githubusercontent.com/${repo}/${branch}/${f.path}`,
+      size: f.size
+    }));
+
+    renderGithubFileList(repo, branch);
+    setGithubStatus(`Found ${scannable.length} scannable file${scannable.length !== 1 ? 's' : ''} in ${repo}`, 'ok');
+
+  } catch(err) {
+    setGithubStatus(err.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Fetch Files';
+  }
+}
+
+function renderGithubFileList(repo, branch) {
+  const listEl = document.getElementById('github-file-list');
+  const hintEl = document.getElementById('github-select-hint');
+
+  listEl.innerHTML = '';
+  githubFiles.forEach((f, i) => {
+    const item = document.createElement('label');
+    item.className = 'github-file-item';
+    item.innerHTML = `
+      <input type="checkbox" data-idx="${i}" onchange="updateGithubSelection()" checked>
+      <span>${f.path}</span>
+      <span style="margin-left:auto;color:var(--text-muted);font-size:0.65rem">${(f.size/1024).toFixed(1)}KB</span>
+    `;
+    listEl.appendChild(item);
+  });
+
+  listEl.classList.remove('hidden');
+  hintEl.textContent = `Select files to include in scan. All ${githubFiles.length} selected.`;
+  hintEl.classList.remove('hidden');
+}
+
+function updateGithubSelection() {
+  const checked = document.querySelectorAll('#github-file-list input[type=checkbox]:checked').length;
+  const total = githubFiles.length;
+  const hint = document.getElementById('github-select-hint');
+  hint.textContent = `${checked} of ${total} files selected.`;
+}
+
+function setGithubStatus(msg, type) {
+  const el = document.getElementById('github-status');
+  el.textContent = msg;
+  el.className = 'github-status' + (type ? ' ' + type : '');
+}
+
+async function getGithubCode() {
+  const checkboxes = document.querySelectorAll('#github-file-list input[type=checkbox]:checked');
+  if (checkboxes.length === 0) throw new Error('No files selected.');
+
+  const selected = Array.from(checkboxes).map(cb => githubFiles[parseInt(cb.dataset.idx)]);
+
+  // Fetch content for selected files (parallel, with cache)
+  const fetches = selected.map(async f => {
+    if (githubFetched[f.path]) return `// ── FILE: ${f.path} ──\n${githubFetched[f.path]}`;
+    const res = await fetch(f.url);
+    if (!res.ok) return `// ── FILE: ${f.path} — fetch failed ──\n`;
+    const text = await res.text();
+    githubFetched[f.path] = text;
+    return `// ── FILE: ${f.path} ──\n${text}`;
+  });
+
+  const contents = await Promise.all(fetches);
+  const combined = contents.join('\n\n');
+
+  // Detect dominant language
+  const pyCount = selected.filter(f => f.path.endsWith('.py')).length;
+  const jsCount = selected.filter(f => /\.[jt]sx?$/.test(f.path)).length;
+  const lang = pyCount >= jsCount ? 'python' : 'javascript';
+  document.getElementById('lang-select').value = lang;
+
+  return { code: combined, lang };
+}
+
 // ── LANGUAGE DETECTION ───────────────────────────────────────────
 function detectLanguage(code) {
-  if (/^\s*def |^\s*class |import \w+\s*$|from \w+ import/m.test(code)) return 'python';
+  if (/^\s*def |\s*class |import \w+\s*$|from \w+ import/m.test(code)) return 'python';
   if (/^\s*(?:const|let|var|function|async|import|export|require)/m.test(code)) return 'javascript';
   return 'python';
 }
@@ -1097,24 +711,35 @@ function detectLanguage(code) {
 // ── MAIN SCAN ────────────────────────────────────────────────────
 async function runScan() {
   const activeTab = document.querySelector('.tab.active').dataset.tab;
-  const code = activeTab === 'paste'
-    ? document.getElementById('code-input').value.trim()
-    : uploadedCode.trim();
+  let code = '', lang = '';
 
-  if (!code) {
-    showError('Please paste some code or upload a file first.');
-    return;
+  // Validate inputs BEFORE touching button state
+  if (activeTab === 'paste') {
+    code = document.getElementById('code-input').value.trim();
+    if (!code) { showError('Please paste some code first.'); return; }
+    if (code.length < 20) { showError('Code is too short to analyze meaningfully.'); return; }
+    const sel = document.getElementById('lang-select').value;
+    lang = sel === 'auto' ? detectLanguage(code) : sel;
+
+  } else if (activeTab === 'upload') {
+    code = uploadedCode.trim();
+    if (!code) {
+      showError('No file loaded yet. Click the upload zone to choose a .py, .js, or .ts file, then click Run AIRA Scan.');
+      return;
+    }
+    const sel = document.getElementById('lang-select').value;
+    lang = sel === 'auto' ? detectLanguage(code) : sel;
+
+  } else if (activeTab === 'github') {
+    // For GitHub we need to fetch async — do it after button is in loading state
+    // Validation happens inside getGithubCode()
+    if (githubFiles.length === 0) {
+      showError('Please fetch a GitHub repo first, then click Run AIRA Scan.');
+      return;
+    }
   }
 
-  if (code.length < 20) {
-    showError('Code is too short to analyze meaningfully.');
-    return;
-  }
-
-  const langSelect = document.getElementById('lang-select').value;
-  const lang = langSelect === 'auto' ? detectLanguage(code) : langSelect;
-
-  // UI: loading state
+  // UI: loading
   const btn = document.getElementById('scan-btn');
   btn.disabled = true;
   btn.classList.add('loading');
@@ -1123,34 +748,39 @@ async function runScan() {
   document.getElementById('results').style.display = 'none';
   document.getElementById('error-panel').classList.remove('show');
   document.getElementById('research-panel').classList.remove('show');
+  document.getElementById('share-panel').classList.remove('show');
+  document.getElementById('scan-meta').innerHTML = '';
+  document.getElementById('research-success').style.display = 'none';
+  document.querySelectorAll('.research-actions button').forEach(b => { b.disabled = false; });
 
   const progress = document.getElementById('scan-progress');
   progress.classList.add('show');
 
   const labels = [
-    'Parsing code structure…',
-    'Checking exception handlers…',
-    'Analyzing return contracts…',
-    'Scanning for bypass paths…',
-    'Evaluating startup integrity…',
-    'Assessing confidence patterns…',
-    'Running all 15 AIRA checks…',
-    'Compiling findings…'
+    'Parsing code structure…','Checking exception handlers…','Analyzing return contracts…',
+    'Scanning for bypass paths…','Evaluating startup integrity…','Assessing confidence patterns…',
+    'Running all 15 AIRA checks…','Compiling findings…'
   ];
   let li = 0;
   const labelEl = document.getElementById('progress-label');
-  const labelInterval = setInterval(() => {
-    labelEl.textContent = labels[li % labels.length];
-    li++;
-  }, 700);
+  const labelInterval = setInterval(() => { labelEl.textContent = labels[li++ % labels.length]; }, 700);
 
   try {
+    // GitHub: fetch file contents now (inside try so button always resets on error)
+    if (activeTab === 'github') {
+      const ghResult = await getGithubCode();
+      code = ghResult.code;
+      lang = ghResult.lang;
+    }
+
     const result = await callAIRAScanner(code, lang);
     clearInterval(labelInterval);
     progress.classList.remove('show');
     renderResults(result);
     lastResult = result;
-  } catch (err) {
+    // Encode result into URL hash for sharing
+    encodeResultToHash(result);
+  } catch(err) {
     clearInterval(labelInterval);
     progress.classList.remove('show');
     showError(`Scan failed: ${err.message}`);
@@ -1161,12 +791,18 @@ async function runScan() {
   }
 }
 
-// ── CLAUDE API CALL ───────────────────────────────────────────────
-async function callAIRAScanner(code, lang) {
-  const systemPrompt = `You are AIRA — the AI-Induced Risk Audit scanner v1.2.
+// ── SCAN ENGINES ─────────────────────────────────────────────────
+const HUMAN_REVIEW_KEYS = new Set(['logic_consistency', 'lineage']);
+const CHECK_NAME_LOOKUP = {};
 
-Analyze the provided ${lang} code against all 15 AIRA checks. Return ONLY valid JSON matching this exact schema:
+function getScanEngine() {
+  return document.getElementById('engine-select').value;
+}
 
+function buildPromptForModel(code, lang) {
+  return `Analyze this ${lang} code with AIRA v1.2.
+
+Return ONLY valid JSON matching this exact schema:
 {
   "checks": {
     "success_integrity": "PASS|FAIL|UNKNOWN",
@@ -1191,7 +827,8 @@ Analyze the provided ${lang} code against all 15 AIRA checks. Return ONLY valid 
       "check_name": "SUCCESS INTEGRITY",
       "severity": "HIGH|MEDIUM|LOW",
       "line": 42,
-      "description": "Clear description of the specific violation found"
+      "description": "Clear description of the specific violation found",
+      "snippet": "optional code snippet"
     }
   ],
   "summary": {
@@ -1203,36 +840,37 @@ Analyze the provided ${lang} code against all 15 AIRA checks. Return ONLY valid 
 }
 
 AIRA CHECK DEFINITIONS:
-C01 SUCCESS INTEGRITY: Does the system return success when critical operations failed? Flag try/catch that returns true/success after errors.
-C02 AUDIT INTEGRITY: Can audit writes fail silently? Flag audit/log operations in try blocks with non-re-raising handlers.
-C03 EXCEPTION SUPPRESSION: Broad except/catch blocks that swallow errors without re-raising. Flag bare except, except Exception, empty catch blocks, catch that only logs.
-C04 FALLBACK CONTROL: Fallback/degraded/best-effort logic scattered across the codebase without centralized governance.
-C05 BYPASS PATHS: Flags like testing_bypass, skip_validation, force_model_output, allow_degraded without strict controls.
-C06 RETURN CONTRACTS: Functions returning None/null/undefined/false in multiple semantically different contexts (failure vs absence vs disabled).
-C07 PARALLEL LOGIC DRIFT: Mark UNKNOWN — requires human review of batch vs streaming vs sync vs async paths.
-C08 BACKGROUND TASKS: asyncio.create_task, setTimeout, setInterval, Promise chains without error handlers or supervision.
-C09 ENVIRONMENT SAFETY: Safety checks relaxed in dev/staging/test environments. Environment-conditional validation.
-C10 STARTUP INTEGRITY: Initialization functions that catch exceptions and continue instead of halting.
-C11 DETERMINISM: Non-zero temperature in LLM/model calls on commit or decision paths.
-C12 LINEAGE: Mark UNKNOWN — requires human review of source-to-output traceability.
-C13 CONFIDENCE MISREPRESENTATION: Functions returning results without confidence/certainty metadata when output could be estimated or cached.
-C14 TEST COVERAGE ASYMMETRY: Test files with disproportionate happy-path vs failure-path coverage.
-C15 IDEMPOTENCY DRIFT: Retry logic applied to write/commit/charge operations without idempotency keys.
+C01 SUCCESS INTEGRITY: success returned after critical failures.
+C02 AUDIT INTEGRITY: audit/evidence writes can fail silently.
+C03 EXCEPTION SUPPRESSION: broad catch/except that swallows failures.
+C04 FALLBACK CONTROL: distributed fallback/degraded/best-effort logic.
+C05 BYPASS PATHS: flags like testing_bypass, skip_validation, force_model_output, allow_degraded.
+C06 RETURN CONTRACTS: ambiguous None/null/undefined/false sentinel returns.
+C07 PARALLEL LOGIC DRIFT: ALWAYS UNKNOWN.
+C08 BACKGROUND TASKS: unsupervised async/background work.
+C09 ENVIRONMENT SAFETY: safety relaxed in dev/test/staging/local.
+C10 STARTUP INTEGRITY: startup/init catches exceptions and continues.
+C11 DETERMINISM: non-zero temperature or random model settings in decision paths.
+C12 LINEAGE: ALWAYS UNKNOWN.
+C13 CONFIDENCE MISREPRESENTATION: inferred or degraded output without confidence metadata.
+C14 TEST COVERAGE ASYMMETRY: failure-path tests lag happy-path tests.
+C15 IDEMPOTENCY DRIFT: retrying writes without idempotency controls.
 
-IMPORTANT:
-- logic_consistency and lineage are ALWAYS "UNKNOWN" — they require human review
-- Be precise: only flag genuine violations, not speculation
-- Include line numbers when identifiable
-- Return ONLY the JSON object, no preamble or explanation`;
+Keep C07 and C12 as UNKNOWN. Include only grounded findings. Code:
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+${code.slice(0, 30000)}`;
+}
+
+async function callGeminiScanner(code, lang) {
+  const systemPrompt = `You are AIRA — the AI-Induced Risk Audit scanner v1.2.
+You audit code for truthful failure handling. Return JSON only.`;
+  const response = await fetch('/api/scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
+      model: 'gemini-2.5-flash',
       system: systemPrompt,
-      messages: [{ role: 'user', content: `Analyze this ${lang} code:\n\n${code.slice(0, 8000)}` }]
+      prompt: buildPromptForModel(code, lang)
     })
   });
 
@@ -1242,14 +880,350 @@ IMPORTANT:
   }
 
   const data = await response.json();
-  const text = data.content?.map(b => b.text || '').join('') || '';
-  const clean = text.replace(/```json|```/g, '').trim();
+  const clean = String(data.text || '').replace(/```json|```/g, '').trim();
 
   try {
-    return JSON.parse(clean);
+    return normalizeScannerResult(JSON.parse(clean), {
+      engine: 'gemini',
+      engine_label: 'Gemini structured scan',
+      note: 'Server-side Gemini analysis via the free-tier proxy.'
+    });
   } catch {
-    throw new Error('Could not parse scanner response. Please try again.');
+    throw new Error('Could not parse Gemini scanner response.');
   }
+}
+
+async function callAIRAScanner(code, lang) {
+  const engine = getScanEngine();
+  if (engine === 'heuristic') {
+    return buildHeuristicResult(code, lang, {
+      engine: 'heuristic',
+      engine_label: 'Local heuristic scan',
+      note: 'Browser-only heuristic preview. Use this as a triage pass, not a final audit.'
+    });
+  }
+
+  try {
+    return await callGeminiScanner(code, lang);
+  } catch (err) {
+    if (engine === 'gemini') {
+      throw err;
+    }
+
+    showToast('Gemini unavailable. Falling back to the free local heuristic scan.', 'success');
+    return buildHeuristicResult(code, lang, {
+      engine: 'heuristic',
+      engine_label: 'Local heuristic fallback',
+      note: 'Gemini was unavailable, so this result comes from deterministic browser heuristics.'
+    });
+  }
+}
+
+function normalizeScannerResult(raw, meta = {}) {
+  const result = {
+    checks: {},
+    findings: [],
+    summary: { high: 0, medium: 0, low: 0, total: 0 },
+    meta
+  };
+
+  for (const key of Object.keys(CHECK_LABELS)) {
+    const value = raw?.checks?.[key];
+    result.checks[key] = value === 'PASS' || value === 'FAIL' || value === 'UNKNOWN' ? value : 'UNKNOWN';
+  }
+
+  result.checks.logic_consistency = 'UNKNOWN';
+  result.checks.lineage = 'UNKNOWN';
+
+  if (Array.isArray(raw?.findings)) {
+    result.findings = raw.findings.map(item => ({
+      check_id: item?.check_id || 'C00',
+      check_name: item?.check_name || 'UNSPECIFIED',
+      severity: item?.severity === 'HIGH' || item?.severity === 'MEDIUM' || item?.severity === 'LOW' ? item.severity : 'LOW',
+      line: Number.isFinite(Number(item?.line)) ? Number(item.line) : null,
+      description: String(item?.description || 'Finding details unavailable.'),
+      snippet: item?.snippet ? String(item.snippet) : ''
+    }));
+  }
+
+  result.summary = summarizeFindings(result.findings);
+  return result;
+}
+
+function summarizeFindings(findings) {
+  const summary = { high: 0, medium: 0, low: 0, total: findings.length };
+  findings.forEach(item => {
+    if (item.severity === 'HIGH') summary.high += 1;
+    else if (item.severity === 'MEDIUM') summary.medium += 1;
+    else summary.low += 1;
+  });
+  return summary;
+}
+
+function buildHeuristicResult(code, lang, meta) {
+  const lines = code.split(/\r?\n/);
+  const result = {
+    checks: Object.fromEntries(Object.keys(CHECK_LABELS).map(key => [key, 'UNKNOWN'])),
+    findings: [],
+    summary: { high: 0, medium: 0, low: 0, total: 0 },
+    meta
+  };
+  const evaluated = new Set([
+    'success_integrity',
+    'audit_integrity',
+    'exception_handling',
+    'fallback_control',
+    'bypass_controls',
+    'return_contracts',
+    'background_tasks',
+    'environment_safety',
+    'startup_integrity',
+    'determinism',
+    'idempotency_safety'
+  ]);
+  const seen = new Set();
+
+  const addFinding = (key, severity, line, description, snippet = '') => {
+    const dedupeKey = `${key}:${line || 0}:${description}`;
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    result.checks[key] = 'FAIL';
+    result.findings.push({
+      check_id: CHECK_LABELS[key].id,
+      check_name: CHECK_NAME_LOOKUP[key],
+      severity,
+      line,
+      description,
+      snippet
+    });
+  };
+
+  const setPassIfChecked = key => {
+    evaluated.add(key);
+    if (!HUMAN_REVIEW_KEYS.has(key) && result.checks[key] === 'UNKNOWN') {
+      result.checks[key] = 'PASS';
+    }
+  };
+
+  const lineWindow = (start, size = 6) => lines.slice(start, start + size).join('\n');
+  const auditPattern = /\b(audit|evidence|ledger|replay|provenance|record_event|append_event|write_audit|persist_audit)\b/i;
+  const fallbackPattern = /\b(fallback|degraded|best[- ]?effort|graceful|soft[- ]?fail|fail[- ]?open|default(?:ing)?\s+to|use default)\b/i;
+  const bypassPattern = /\b(testing_bypass|bypass|skip_(?:validation|checks|guard|doctor)|allow_degraded|force_model_output|force_override|disable_guard(?:rail)?s?)\b/i;
+  const sentinelReturnPattern = /\breturn\s+(None|null|undefined|false)\b/;
+  const backgroundPattern = /\b(asyncio\.create_task|create_task\(|setTimeout\(|setInterval\(|queueMicrotask\(|Promise\.(?:then|catch|finally)\()/
+  const envPattern = /\b(NODE_ENV|ENV|development|staging|test|testing|local)\b/i;
+  const determinismPattern = /\btemperature\s*[:=]\s*(0?\.\d*[1-9]\d*|[1-9]\d*(?:\.\d+)?)\b/i;
+  const retryPattern = /\b(retry|retries|backoff|attempt|exponential)\b/i;
+  const writePattern = /\b(charge|commit|insert|create|save|write|post|publish|enqueue|upsert)\b/i;
+  const idempotencyPattern = /\b(idempotenc|dedup|request_id|operation_id|idempotent)\b/i;
+  const confidencePattern = /\b(confidence|certainty|probab|likelihood|score)\b/i;
+  const aiOutputPattern = /\b(llm|model|inference|predict|estimate|classif|rank|cached?|fallback)\b/i;
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    const handlerStart = /^\s*except(?:\s+Exception(?:\s+as\s+\w+)?)?\s*:/.test(line) || /\bcatch\s*\([^)]*\)\s*\{?/.test(line);
+    if (handlerStart) {
+      const block = lineWindow(i + 1, 6);
+      const broadCatch = /^\s*except\s*:/.test(line) || /^\s*except\s+Exception(?:\s+as\s+\w+)?\s*:/.test(line) || /\bcatch\s*\([^)]*\)/.test(line);
+      const rethrows = /\b(raise|throw)\b|Promise\.reject|reject\(/.test(block);
+      const logsOrContinues = /\b(logger|logging|console)\.|\bwarn\(|\berror\(|\bprint\(|\bpass\b|\bcontinue\b|\breturn\b/.test(block);
+
+      evaluated.add('exception_handling');
+      evaluated.add('success_integrity');
+
+      if (broadCatch && !rethrows && logsOrContinues) {
+        addFinding(
+          'exception_handling',
+          /^\s*except\s*:/.test(line) ? 'HIGH' : 'MEDIUM',
+          i + 1,
+          'Broad exception handling suppresses failures without re-raising them.',
+          trimmed
+        );
+      }
+
+      if (/\breturn\s+(?:true|True)\b|success\s*[:=]\s*true|status\s*[:=]\s*['"]ok['"]/.test(block)) {
+        addFinding(
+          'success_integrity',
+          'HIGH',
+          i + 1,
+          'This handler appears to return success after an exception path.',
+          trimmed
+        );
+      }
+    }
+
+    if (auditPattern.test(line)) {
+      evaluated.add('audit_integrity');
+      const nearby = lines.slice(Math.max(0, i - 4), i + 8).join('\n');
+      if (/\bexcept\b|\bcatch\s*\(/.test(nearby) && !/\b(raise|throw)\b|Promise\.reject|reject\(/.test(nearby)) {
+        addFinding(
+          'audit_integrity',
+          'HIGH',
+          i + 1,
+          'Audit or evidence-related work appears to be wrapped in a handler that can fail softly.',
+          trimmed
+        );
+      }
+    }
+
+    if (fallbackPattern.test(line)) {
+      evaluated.add('fallback_control');
+    }
+    if (bypassPattern.test(line)) {
+      evaluated.add('bypass_controls');
+      addFinding(
+        'bypass_controls',
+        'MEDIUM',
+        i + 1,
+        'This code exposes an explicit bypass or override path that deserves strict governance.',
+        trimmed
+      );
+    }
+    if (sentinelReturnPattern.test(line)) {
+      evaluated.add('return_contracts');
+    }
+    if (backgroundPattern.test(line)) {
+      evaluated.add('background_tasks');
+      addFinding(
+        'background_tasks',
+        /create_task/.test(line) ? 'MEDIUM' : 'LOW',
+        i + 1,
+        'Background work is launched here; verify that failures are supervised and surfaced.',
+        trimmed
+      );
+    }
+    if (envPattern.test(line)) {
+      evaluated.add('environment_safety');
+      const nearby = lines.slice(i, i + 3).join('\n');
+      if (/\b(skip|disable|bypass|mock|fallback|allow)\b/i.test(nearby)) {
+        addFinding(
+          'environment_safety',
+          'MEDIUM',
+          i + 1,
+          'Safety or validation behavior appears to change by environment.',
+          trimmed
+        );
+      }
+    }
+    if (determinismPattern.test(line)) {
+      evaluated.add('determinism');
+      addFinding(
+        'determinism',
+        'MEDIUM',
+        i + 1,
+        'A non-zero temperature appears in a model call or decision path.',
+        trimmed
+      );
+    }
+    if (retryPattern.test(line)) {
+      evaluated.add('idempotency_safety');
+      const nearby = lines.slice(i, i + 4).join('\n');
+      if (writePattern.test(nearby) && !idempotencyPattern.test(nearby)) {
+        addFinding(
+          'idempotency_safety',
+          'MEDIUM',
+          i + 1,
+          'Retry logic appears near a write path without an obvious idempotency control.',
+          trimmed
+        );
+      }
+    }
+
+    if (/\b(startup|bootstrap|initialize|initialise|init_app|init_engine|on_startup)\b/i.test(line)) {
+      evaluated.add('startup_integrity');
+      const nearby = lines.slice(i, i + 12).join('\n');
+      if ((/\bexcept\b|\bcatch\s*\(/.test(nearby)) && !/\b(raise|throw)\b/.test(nearby)) {
+        addFinding(
+          'startup_integrity',
+          'MEDIUM',
+          i + 1,
+          'Startup or initialization logic appears to catch failures and continue.',
+          trimmed
+        );
+      }
+    }
+  }
+
+  const fallbackHits = lines.filter(line => fallbackPattern.test(line)).length;
+  if (fallbackHits >= 2) {
+    addFinding(
+      'fallback_control',
+      fallbackHits >= 4 ? 'HIGH' : 'MEDIUM',
+      lines.findIndex(line => fallbackPattern.test(line)) + 1,
+      'Fallback or degraded-mode language appears in multiple places, which suggests distributed fail-soft behavior.',
+      lines.find(line => fallbackPattern.test(line))?.trim() || ''
+    );
+  }
+
+  const sentinelReturns = lines
+    .map((line, index) => sentinelReturnPattern.test(line) ? { line: index + 1, text: line.trim() } : null)
+    .filter(Boolean);
+  if (sentinelReturns.length >= 3) {
+    addFinding(
+      'return_contracts',
+      sentinelReturns.length >= 5 ? 'HIGH' : 'MEDIUM',
+      sentinelReturns[0].line,
+      'Multiple sentinel returns suggest that failure, absence, and disabled states may share the same return contract.',
+      sentinelReturns[0].text
+    );
+  }
+
+  if (confidencePattern.test(code)) {
+    evaluated.add('confidence_representation');
+    setPassIfChecked('confidence_representation');
+  } else if (aiOutputPattern.test(code)) {
+    evaluated.add('confidence_representation');
+    addFinding(
+      'confidence_representation',
+      'LOW',
+      null,
+      'The code appears to produce inferred or degraded outputs without obvious confidence metadata.'
+    );
+  }
+
+  const hasTests = /\b(def\s+test_|it\s*\(|test\s*\(|describe\s*\()/.test(code);
+  if (hasTests) {
+    evaluated.add('test_coverage_symmetry');
+    if (/\b(raises|throw|reject|exception|invalid|error|fail(?:ed|ure)?)\b/i.test(code)) {
+      setPassIfChecked('test_coverage_symmetry');
+    } else {
+      addFinding(
+        'test_coverage_symmetry',
+        'MEDIUM',
+        null,
+        'Tests are present, but obvious failure-path coverage markers were not detected.'
+      );
+    }
+  }
+
+  if (!result.findings.some(item => item.check_id === 'C11') && /\btemperature\s*[:=]\s*0(?:\.0+)?\b/.test(code)) {
+    evaluated.add('determinism');
+    setPassIfChecked('determinism');
+  }
+
+  [
+    'success_integrity',
+    'audit_integrity',
+    'exception_handling',
+    'fallback_control',
+    'bypass_controls',
+    'return_contracts',
+    'background_tasks',
+    'environment_safety',
+    'startup_integrity',
+    'determinism',
+    'idempotency_safety'
+  ].forEach(key => {
+    if (evaluated.has(key) && result.checks[key] === 'UNKNOWN') {
+      result.checks[key] = 'PASS';
+    }
+  });
+
+  result.checks.logic_consistency = 'UNKNOWN';
+  result.checks.lineage = 'UNKNOWN';
+  result.summary = summarizeFindings(result.findings);
+  return result;
 }
 
 // ── RENDER RESULTS ────────────────────────────────────────────────
@@ -1270,11 +1244,15 @@ const CHECK_LABELS = {
   test_coverage_symmetry:    { id: 'C14', label: 'Test Coverage' },
   idempotency_safety:        { id: 'C15', label: 'Idempotency' },
 };
+Object.entries(CHECK_LABELS).forEach(([key, info]) => {
+  CHECK_NAME_LOOKUP[key] = info.label.toUpperCase();
+});
 
 function renderResults(result) {
   const checks   = result.checks   || {};
   const findings = result.findings || [];
   const summary  = result.summary  || {};
+  const meta     = result.meta     || {};
 
   // Check grid
   const grid = document.getElementById('check-grid');
@@ -1286,15 +1264,16 @@ function renderResults(result) {
   }
 
   // Severity row
-  const h = summary.high || 0;
-  const m = summary.medium || 0;
-  const l = summary.low || 0;
+  const h = summary.high || 0, m = summary.medium || 0, l = summary.low || 0;
   document.getElementById('severity-row').innerHTML = `
     <span class="sev-badge high">● ${h} HIGH</span>
     <span class="sev-badge medium">● ${m} MEDIUM</span>
     <span class="sev-badge low">● ${l} LOW</span>
     <span style="font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);margin-left:auto">${summary.total || 0} total findings</span>
   `;
+  document.getElementById('scan-meta').innerHTML = meta.engine_label
+    ? `<span class="scan-meta-badge">${escHtml(meta.engine_label)}</span><span class="scan-meta-note">${escHtml(meta.note || '')}</span>`
+    : '';
 
   // Findings list
   const list = document.getElementById('findings-list');
@@ -1306,14 +1285,8 @@ function renderResults(result) {
         <div class="no-findings-sub">Remember: C07 and C12 still require human review.</div>
       </div>`;
   } else {
-    // Group by check
     const grouped = {};
-    for (const f of findings) {
-      const k = f.check_id || 'OTHER';
-      if (!grouped[k]) grouped[k] = [];
-      grouped[k].push(f);
-    }
-
+    for (const f of findings) { const k = f.check_id || 'OTHER'; if (!grouped[k]) grouped[k] = []; grouped[k].push(f); }
     let html = '';
     for (const [cid, items] of Object.entries(grouped)) {
       const name = items[0].check_name || cid;
@@ -1333,54 +1306,174 @@ function renderResults(result) {
     list.innerHTML = html;
   }
 
-  // Show results
   document.getElementById('results').style.display = 'block';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  // Show research panel if there are findings
   if (findings.length > 0) {
     setTimeout(() => document.getElementById('research-panel').classList.add('show'), 600);
   }
 }
 
+// ── SHAREABLE PERMALINK ───────────────────────────────────────────
+function encodeResultToHash(result) {
+  try {
+    const compact = { c: result.checks, f: result.findings, s: result.summary, m: result.meta || {} };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compact))));
+    const url = `${location.origin}${location.pathname}#r=${encoded}`;
+    document.getElementById('share-url').textContent = url;
+    document.getElementById('share-panel').classList.add('show');
+  } catch(e) { /* silently skip if encoding fails */ }
+}
+
+function decodeResultFromHash() {
+  try {
+    const hash = location.hash;
+    const match = hash.match(/[#&]r=([^&]+)/);
+    if (!match) return;
+    const decoded = JSON.parse(decodeURIComponent(escape(atob(match[1]))));
+    const result = { checks: decoded.c, findings: decoded.f, summary: decoded.s, meta: decoded.m || {} };
+    lastResult = result;
+    renderResults(result);
+    encodeResultToHash(result);
+    showToast('Shared scan results loaded.', 'success');
+  } catch(e) { /* ignore malformed hash */ }
+}
+
+function copyShareLink() {
+  encodeResultToHash(lastResult);
+  document.getElementById('share-panel').classList.add('show');
+  copyShareLinkFromPanel();
+}
+
+function copyShareLinkFromPanel() {
+  const url = document.getElementById('share-url').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('share-copy-btn');
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── PDF EXPORT ────────────────────────────────────────────────────
+function exportPDF() {
+  if (!lastResult) return;
+  const checks   = lastResult.checks   || {};
+  const findings = lastResult.findings || [];
+  const summary  = lastResult.summary  || {};
+  const meta     = lastResult.meta     || {};
+  const now      = new Date().toLocaleString();
+
+  const checkRows = Object.entries(CHECK_LABELS).map(([key, info]) => {
+    const status = checks[key] || 'UNKNOWN';
+    const color  = status === 'PASS' ? '#3fb950' : status === 'FAIL' ? '#f85149' : '#d29922';
+    return `<tr>
+      <td style="font-family:monospace;font-size:11px;color:#888;padding:4px 8px">${info.id}</td>
+      <td style="font-size:12px;padding:4px 8px">${info.label}</td>
+      <td style="font-family:monospace;font-size:11px;font-weight:700;color:${color};padding:4px 8px">${status}</td>
+    </tr>`;
+  }).join('');
+
+  const findingRows = findings.map(f => {
+    const sevColor = f.severity === 'HIGH' ? '#f85149' : f.severity === 'MEDIUM' ? '#d29922' : '#768390';
+    return `<tr>
+      <td style="font-family:monospace;font-size:11px;color:#888;padding:6px 8px;white-space:nowrap">${f.check_id}</td>
+      <td style="font-family:monospace;font-size:11px;font-weight:700;color:${sevColor};padding:6px 8px;white-space:nowrap">${f.severity}</td>
+      <td style="font-size:12px;padding:6px 8px">${escHtml(f.description)}</td>
+      <td style="font-family:monospace;font-size:11px;color:#888;padding:6px 8px;white-space:nowrap">${f.line ? 'L'+f.line : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>AIRA Scan Report — ${now}</title>
+<style>
+  body { font-family: Georgia, serif; color: #1a1a2e; margin: 0; padding: 40px; font-size: 13px; }
+  .cover { margin-bottom: 32px; border-bottom: 2px solid #1a1a2e; padding-bottom: 24px; }
+  .cover h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.5px; }
+  .cover .sub { font-size: 12px; color: #666; font-style: italic; }
+  .cover .meta { font-size: 11px; color: #999; margin-top: 8px; font-family: monospace; }
+  .section-title { font-family: monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888; margin: 24px 0 8px; border-top: 1px solid #e0e0e0; padding-top: 12px; }
+  .summary-pills { display: flex; gap: 16px; margin-bottom: 16px; }
+  .pill { padding: 6px 14px; border-radius: 20px; font-family: monospace; font-size: 12px; font-weight: 700; }
+  .pill.high { background: #fff0f0; color: #f85149; border: 1px solid #f85149; }
+  .pill.medium { background: #fffbf0; color: #d29922; border: 1px solid #d29922; }
+  .pill.low { background: #f5f5f5; color: #666; border: 1px solid #999; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  tr:nth-child(even) { background: #f9f9f9; }
+  th { font-family: monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #888; text-align: left; padding: 6px 8px; border-bottom: 1px solid #ddd; }
+  .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e0e0e0; font-family: monospace; font-size: 10px; color: #bbb; }
+  @media print { body { padding: 20px; } }
+</style>
+</head><body>
+<div class="cover">
+  <h1>AIRA Scan Report</h1>
+  <div class="sub">AI-Induced Risk Audit v1.2 · Reward-Shaped Failure Hypothesis</div>
+  <div class="meta">Generated: ${now} · bageltech.net/aira · William M. Parris, Bagelle Parris Vargas Consulting</div>
+  ${meta.engine_label ? `<div class="meta">Engine: ${escHtml(meta.engine_label)}${meta.note ? ` · ${escHtml(meta.note)}` : ''}</div>` : ''}
+</div>
+
+<div class="section-title">Summary</div>
+<div class="summary-pills">
+  <div class="pill high">${summary.high || 0} HIGH</div>
+  <div class="pill medium">${summary.medium || 0} MEDIUM</div>
+  <div class="pill low">${summary.low || 0} LOW</div>
+</div>
+
+<div class="section-title">Check Results</div>
+<table>
+  <thead><tr><th>ID</th><th>Check</th><th>Result</th></tr></thead>
+  <tbody>${checkRows}</tbody>
+</table>
+
+${findings.length > 0 ? `
+<div class="section-title">Findings (${findings.length})</div>
+<table>
+  <thead><tr><th>Check</th><th>Severity</th><th>Description</th><th>Line</th></tr></thead>
+  <tbody>${findingRows}</tbody>
+</table>` : '<div class="section-title">Findings</div><p style="color:#3fb950;font-family:monospace;font-size:12px">✓ No automated findings detected. C07 and C12 require human review.</p>'}
+
+<div class="footer">AIRA v1.2 · MIT License · Jurisprudential AI Governance Initiative · orcid.org/0009-0001-5272-8599</div>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+
 // ── RESEARCH SUBMISSION ───────────────────────────────────────────
 async function submitResearch() {
   if (!lastResult) return;
-  const checks = lastResult.checks || {};
+  const checks  = lastResult.checks  || {};
   const summary = lastResult.summary || {};
+  const meta    = lastResult.meta    || {};
 
-  // Build anonymized payload — NO source code
   const payload = {
-    fields: {
-      'Submitted At': new Date().toISOString(),
-      'Checks JSON': JSON.stringify(checks),
-      'High Count': summary.high || 0,
-      'Medium Count': summary.medium || 0,
-      'Low Count': summary.low || 0,
-      'Total Findings': summary.total || 0,
-      'Checks Failed': Object.values(checks).filter(v => v === 'FAIL').length,
-      'Source': 'aira.bageltech.net'
-    }
+    submitted_at: new Date().toISOString(),
+    checks,
+    summary,
+    meta,
+    source: 'aira.bageltech.net'
   };
 
+  const successEl = document.getElementById('research-success');
+
   try {
-    // Airtable REST API submission
-    const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(AIRTABLE_TABLE)}`, {
+    const res = await fetch('/api/research', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-
-    if (!res.ok) throw new Error('Submission failed');
-    document.getElementById('research-success').style.display = 'inline';
-    document.querySelector('.research-actions').querySelectorAll('button').forEach(b => b.disabled = true);
-  } catch {
-    // Fallback: open mailto with summary
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Submission error ${res.status}`);
+    }
+    successEl.style.display = 'inline';
+    document.querySelectorAll('.research-actions button').forEach(b => b.disabled = true);
+    showToast('Thank you — results submitted to research dataset.', 'success');
+  } catch(err) {
+    console.warn('Research submission failed:', err.message);
     const body = encodeURIComponent(
-      `AIRA Research Submission\n\nChecks:\n${JSON.stringify(checks, null, 2)}\n\nSummary:\n${JSON.stringify(summary, null, 2)}`
+      `AIRA Research Submission\n\nChecks:\n${JSON.stringify(checks, null, 2)}\n\nSummary:\n${JSON.stringify(summary, null, 2)}\n\nMeta:\n${JSON.stringify(meta, null, 2)}`
     );
     window.location.href = `mailto:bill@bageltech.net?subject=AIRA Research Submission&body=${body}`;
   }
@@ -1388,6 +1481,14 @@ async function submitResearch() {
 
 function dismissResearch() {
   document.getElementById('research-panel').classList.remove('show');
+}
+
+// ── TOAST ────────────────────────────────────────────────────────
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => { el.classList.remove('show'); }, 3000);
 }
 
 // ── UTILS ────────────────────────────────────────────────────────
@@ -1398,12 +1499,16 @@ function showError(msg) {
 }
 
 function escHtml(str) {
+  if (!str) return '';
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// ── ON LOAD: check for shared result in hash ──────────────────────
+window.addEventListener('DOMContentLoaded', decodeResultFromHash);
 </script>
 </body>
 </html>
