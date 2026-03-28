@@ -391,7 +391,7 @@ def save_record(db, record):
       </select>
       <span class="lang-label">Engine</span>
       <select id="engine-select">
-        <option value="auto">Auto (Groq + fallback)</option>
+        <option value="auto">Auto (Recommended: Groq)</option>
         <option value="gemini">Gemini only</option>
         <option value="heuristic">Local heuristic only</option>
       </select>
@@ -401,8 +401,8 @@ def save_record(db, record):
       </button>
     </div>
     <div class="engine-note">
-      Auto mode routes through Groq first, then any configured cloud fallbacks, and finally the browser-only heuristic scan if all cloud providers are unavailable.
-      Results always label which engine actually ran.
+      Recommended zero-cost setup: configure <code>GROQ_API_KEY</code> and leave the scanner in Auto mode.
+      It routes through Groq first, then any configured cloud fallbacks, and finally the browser-only heuristic scan if all cloud providers are unavailable.
     </div>
 
     <!-- Loading -->
