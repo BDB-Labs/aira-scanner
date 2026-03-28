@@ -117,6 +117,22 @@ For the current public scanner, the recommended path is:
 
 That gives AIRA a free structured-output cloud path with the browser heuristic scanner still available as the final fallback.
 
+### Quick health check
+
+To confirm Groq is wired without running a full scan:
+
+```bash
+curl http://localhost:3000/api/health
+```
+
+Or after deployment:
+
+```bash
+curl https://your-domain.example/api/health
+```
+
+You should see `groq` listed under `configured_providers` when `GROQ_API_KEY` is set.
+
 ---
 
 ## Project Philosophy
