@@ -85,6 +85,17 @@ Early-stage research tool.
 Initial scanner and rule set are live.
 Empirical datasets and expanded detection rules are in progress.
 
+## Documentation
+
+For readers who need more than the landing-page overview:
+
+- [CHANGELOG.md](./CHANGELOG.md) tracks major milestones
+- [docs/EVOLUTION.md](./docs/EVOLUTION.md) explains how the scanner evolved from the original web prototype to the current research tool
+- [docs/METHODOLOGY.md](./docs/METHODOLOGY.md) defines what AIRA measures, how the scan modes work, and what claims the tool should not make
+- [docs/AIRA_CHECKS.md](./docs/AIRA_CHECKS.md) documents the 15 checks in practical terms
+- [CLI/README.md](./CLI/README.md) documents the local and CI scanner surface
+- [SUPABASE_SCHEMA.sql](./SUPABASE_SCHEMA.sql) and [AIRTABLE_SCHEMA.md](./AIRTABLE_SCHEMA.md) document the current research sink contracts
+
 ---
 
 ## Runtime Notes
@@ -150,8 +161,8 @@ curl https://your-domain.example/api/supabase-health
 
 The recommended research storage layouts are documented in:
 
-- [SUPABASE_SCHEMA.sql](/Users/billp/Documents/GitHub/aira-scanner/SUPABASE_SCHEMA.sql)
-- [AIRTABLE_SCHEMA.md](/Users/billp/Documents/GitHub/aira-scanner/AIRTABLE_SCHEMA.md)
+- [SUPABASE_SCHEMA.sql](./SUPABASE_SCHEMA.sql)
+- [AIRTABLE_SCHEMA.md](./AIRTABLE_SCHEMA.md)
 
 To probe the deterministic static scan route directly:
 
@@ -222,12 +233,11 @@ Contributions are welcome, especially in these areas:
 
 Short-term repo improvements include:
 
-* formal contribution guidelines
-* versioned changelog
-* methodology documentation
 * sample scan outputs
 * benchmark datasets
-* rule documentation
+* rule calibration notes
+* reproducible comparison fixtures
+* cross-repo analysis tooling
 
 ---
 

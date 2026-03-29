@@ -212,8 +212,8 @@ If one of those optional fields does not exist in Airtable yet, the CLI drops it
 
 The recommended storage layouts are documented in:
 
-- [SUPABASE_SCHEMA.sql](/Users/billp/Documents/GitHub/aira-scanner/SUPABASE_SCHEMA.sql)
-- [AIRTABLE_SCHEMA.md](/Users/billp/Documents/GitHub/aira-scanner/AIRTABLE_SCHEMA.md)
+- [SUPABASE_SCHEMA.sql](../SUPABASE_SCHEMA.sql)
+- [AIRTABLE_SCHEMA.md](../AIRTABLE_SCHEMA.md)
 
 ---
 
