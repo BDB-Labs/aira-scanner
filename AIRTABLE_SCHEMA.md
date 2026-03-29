@@ -1,5 +1,4 @@
 # Airtable Research Schema
-
 Create the base and table:
 
 1. Create a base named `AIRA Research`
