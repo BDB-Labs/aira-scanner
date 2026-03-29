@@ -142,6 +142,7 @@ export GROQ_API_KEY="..."
 export GROQ_MODEL="your-provider-model-id"
 
 # Preferred hosted backend: Supabase
+export RESEARCH_BACKEND="supabase"
 export SUPABASE_URL="https://your-project.supabase.co"
 export SUPABASE_SERVICE_ROLE_KEY="..."
 export SUPABASE_TABLE="aira_submissions"
@@ -149,7 +150,7 @@ export SUPABASE_TABLE="aira_submissions"
 # Local/CI backend: newline-delimited JSON
 export AIRA_RESEARCH_JSONL="/absolute/path/to/aira-research.jsonl"
 
-# Airtable compatibility fallback
+# Airtable legacy compatibility fallback
 export AIRTABLE_BASE_ID="app..."
 export AIRTABLE_TABLE="Submissions"
 export AIRTABLE_TOKEN="pat..."
@@ -187,7 +188,7 @@ Recommended:
 
 - Supabase for the hosted web scanner
 - JSONL for local and CI collection
-- Airtable only as a compatibility fallback
+- Airtable only as a legacy compatibility fallback
 
 If you still use Airtable, the CLI remains compatible with the current minimal schema already implied by the web app proxy, and will populate richer optional fields when present:
 

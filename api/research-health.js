@@ -14,5 +14,9 @@ export default async function handler(req, res) {
   }
 
   const snapshot = await checkResearchConnection(process.env);
-  return res.status(snapshot.ok ? 200 : (snapshot.status || 503)).json(snapshot);
+  return res.status(snapshot.ok ? 200 : (snapshot.status || 503)).json({
+    ...snapshot,
+    route: '/api/research-health',
+    preferredBackend: snapshot.preferredBackend || 'supabase',
+  });
 }

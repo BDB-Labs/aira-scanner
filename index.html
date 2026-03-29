@@ -448,7 +448,7 @@ def save_record(db, record):
         <div class="research-body">
           AIRA is building the first empirical dataset of training-induced failure patterns in AI-generated code.
           Your anonymized scan results (check outcomes only — no source code) can contribute to this research.
-          Submissions now go through a server-side env-var backed proxy so no Airtable secret is exposed in the browser.
+          Submissions now go through a server-side env-var backed research backend so no storage secret is exposed in the browser.
         </div>
         <div class="research-actions">
           <button class="research-btn primary" onclick="submitResearch()">Submit Anonymized Results</button>
@@ -1536,7 +1536,9 @@ async function submitResearch() {
     }
     successEl.style.display = 'inline';
     document.querySelectorAll('.research-actions button').forEach(b => b.disabled = true);
-    showToast('Thank you — results submitted to research dataset.', 'success');
+    const responsePayload = await res.json().catch(() => ({}));
+    const backend = responsePayload.backend || 'research backend';
+    showToast(`Thank you — results submitted to ${backend}.`, 'success');
   } catch(err) {
     console.warn('Research submission failed:', err.message);
     const body = encodeURIComponent(

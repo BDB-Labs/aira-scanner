@@ -161,12 +161,16 @@ def print_research_health(snapshot: dict) -> None:
     configured = f"{C.GREEN}yes{C.RESET}" if snapshot["configured"] else f"{C.RED}no{C.RESET}"
     reachable = f"{C.GREEN}yes{C.RESET}" if snapshot.get("reachable") else f"{C.RED}no{C.RESET}"
     print(f"  Backend:        {snapshot.get('backend', 'unknown')}")
+    if snapshot.get("preferred_backend"):
+        print(f"  Preferred:      {snapshot['preferred_backend']}")
     print(f"  Configured:     {configured}")
     if snapshot.get("table"):
         print(f"  Table:          {snapshot['table']}")
     if snapshot.get("path"):
         print(f"  Path:           {snapshot['path']}")
     print(f"  Reachable:      {reachable}")
+    if snapshot.get("legacy_fallback"):
+        print(f"  Mode:           {C.YELLOW}legacy compatibility fallback{C.RESET}")
     print(f"  Message:        {snapshot.get('message', 'n/a')}")
     print()
 
@@ -211,6 +215,8 @@ def print_research_submission_status(response: dict) -> None:
     print(f"  Submission id:   {response.get('id') or 'created'}")
     if response.get("path"):
         print(f"  Output path:     {response['path']}")
+    if response.get("legacy_fallback"):
+        print(f"  Mode:            {C.YELLOW}legacy compatibility fallback{C.RESET}")
     dropped = response.get("dropped_optional_fields") or []
     if dropped:
         print(f"  Optional fields dropped: {', '.join(dropped)}")
@@ -278,10 +284,11 @@ def build_parser() -> argparse.ArgumentParser:
     health_parser.add_argument("--json", action="store_true", help="Emit health snapshot as JSON")
     health_parser.add_argument(
         "--check-research",
+        "--check-supabase",
         "--check-airtable",
         dest="check_research",
         action="store_true",
-        help="Verify research backend connectivity",
+        help="Verify research backend connectivity (Supabase preferred; --check-airtable kept as legacy alias)",
     )
     health_parser.add_argument("--research-timeout", type=int, default=10, help="HTTP timeout for research connectivity checks")
     add_llm_arguments(health_parser)
@@ -344,7 +351,7 @@ def main() -> None:
                 dropped = research_response.get("dropped_optional_fields") or []
                 dropped_msg = f" (dropped optional fields: {', '.join(dropped)})" if dropped else ""
                 print(
-                    f"Research submission succeeded: Airtable record {research_response.get('id') or 'created'}{dropped_msg}",
+                    f"Research submission succeeded: {research_response.get('backend', 'research')} record {research_response.get('id') or 'created'}{dropped_msg}",
                     file=sys.stderr,
                 )
 

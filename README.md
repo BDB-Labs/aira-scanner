@@ -102,10 +102,10 @@ The scanner currently supports:
 * research submission through a server-side research backend
 * preferred hosted backend: Supabase
 * local/CI backend: JSONL append sink
-* Airtable remains available as a compatibility fallback
+* Airtable remains available only as a legacy compatibility fallback
 * CLI/CI aggregate-only submission with `aira scan --submit-research-aggregate`
 * read-only CLI backend verification with `aira health --check-research`
-* direct web backend verification with `/api/research-health`
+* direct web backend verification with `/api/research-health` or `/api/supabase-health`
 
 No research backend secret is exposed in the browser.
 
@@ -141,6 +141,12 @@ To verify the configured research backend:
 curl https://your-domain.example/api/research-health
 ```
 
+For the preferred hosted path specifically:
+
+```bash
+curl https://your-domain.example/api/supabase-health
+```
+
 The recommended research storage layouts are documented in:
 
 - [SUPABASE_SCHEMA.sql](/Users/billp/Documents/GitHub/aira-scanner/SUPABASE_SCHEMA.sql)
@@ -159,6 +165,7 @@ curl -X POST https://your-domain.example/api/static-scan \
 If you want to get away from Airtable, use Supabase for the hosted scanner:
 
 ```bash
+RESEARCH_BACKEND=supabase
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
 SUPABASE_TABLE=aira_submissions

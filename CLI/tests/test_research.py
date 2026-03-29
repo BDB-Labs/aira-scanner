@@ -14,6 +14,7 @@ from aira.research import (
     build_structured_submission_record,
     check_airtable_connection,
     check_research_connection,
+    infer_research_backend,
     submit_aggregate_research,
 )
 from aira.scanner import ScanResult
@@ -132,6 +133,30 @@ class ResearchHelpersTests(unittest.TestCase):
 
         self.assertEqual(snapshot["backend"], "none")
         self.assertFalse(snapshot["ok"])
+        self.assertEqual(snapshot["preferred_backend"], "supabase")
+
+    def test_infer_research_backend_prefers_supabase_over_airtable(self):
+        with mock.patch.dict(
+            os.environ,
+            {
+                "SUPABASE_URL": "https://example.supabase.co",
+                "SUPABASE_SERVICE_ROLE_KEY": "secret",
+                "AIRTABLE_BASE_ID": "app123",
+                "AIRTABLE_TOKEN": "token123",
+            },
+            clear=True,
+        ):
+            backend = infer_research_backend()
+
+        self.assertEqual(backend, "supabase")
+
+    def test_check_research_connection_reports_invalid_backend(self):
+        with mock.patch.dict(os.environ, {"RESEARCH_BACKEND": "bogus"}, clear=True):
+            snapshot = check_research_connection()
+
+        self.assertEqual(snapshot["backend"], "bogus")
+        self.assertTrue(snapshot["invalid_backend"])
+        self.assertIn("Unknown research backend", snapshot["message"])
 
     def test_submit_aggregate_research_drops_unknown_optional_fields(self):
         bodies = []
@@ -225,6 +250,28 @@ class ResearchHelpersTests(unittest.TestCase):
         self.assertEqual(exit_ctx.exception.code, 0)
         submit_mock.assert_called_once()
         self.assertIn("Research submission succeeded", stderr.getvalue())
+
+    def test_scan_command_reports_backend_name_for_research_submission(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir) / "sample.py"
+            target.write_text("print('safe')\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with mock.patch(
+                "aira.cli.submit_aggregate_research",
+                return_value={"backend": "supabase", "id": "row123", "dropped_optional_fields": []},
+            ):
+                with mock.patch(
+                    "sys.argv",
+                    ["aira", "scan", str(target), "--output", "json", "--engine", "static", "--submit-research-aggregate"],
+                ):
+                    with redirect_stdout(stdout), redirect_stderr(stderr):
+                        with self.assertRaises(SystemExit) as exit_ctx:
+                            main()
+
+        self.assertEqual(exit_ctx.exception.code, 0)
+        self.assertIn("supabase record row123", stderr.getvalue())
 
     def test_health_command_reports_research_backend_json(self):
         stdout = io.StringIO()

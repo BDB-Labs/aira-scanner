@@ -48,6 +48,9 @@ OPTIONAL_FIELD_ORDER = (
 )
 
 UNKNOWN_FIELD_RE = re.compile(r'Unknown field name:\s*"?(?P<field>[^"]+)"?')
+VALID_RESEARCH_BACKENDS = {"supabase", "jsonl", "airtable", "none"}
+DEFAULT_HOSTED_RESEARCH_BACKEND = "supabase"
+RESEARCH_BACKEND_ORDER = ("supabase", "jsonl", "airtable")
 
 
 class ResearchSubmissionError(RuntimeError):
@@ -87,6 +90,10 @@ def infer_research_backend(explicit_backend: Optional[str] = None) -> str:
     if _env("AIRTABLE_BASE_ID") and _env("AIRTABLE_TOKEN"):
         return "airtable"
     return "none"
+
+
+def _is_valid_backend(name: str) -> bool:
+    return name in VALID_RESEARCH_BACKENDS
 
 
 def _airtable_target() -> tuple[Optional[str], str, Optional[str]]:
@@ -140,13 +147,22 @@ def jsonl_config_snapshot() -> Dict[str, Any]:
 
 def research_backend_snapshot(explicit_backend: Optional[str] = None) -> Dict[str, Any]:
     backend = infer_research_backend(explicit_backend)
-    snapshot: Dict[str, Any] = {"backend": backend}
+    snapshot: Dict[str, Any] = {
+        "backend": backend,
+        "preferred_backend": DEFAULT_HOSTED_RESEARCH_BACKEND,
+        "backend_order": list(RESEARCH_BACKEND_ORDER),
+        "legacy_fallback_backend": "airtable",
+    }
+    if not _is_valid_backend(backend):
+        snapshot.update({"configured": False, "invalid_backend": True})
+        return snapshot
     if backend == "supabase":
         snapshot.update(supabase_config_snapshot())
     elif backend == "jsonl":
         snapshot.update(jsonl_config_snapshot())
     elif backend == "airtable":
         snapshot.update(airtable_config_snapshot())
+        snapshot["legacy_fallback"] = True
     else:
         snapshot.update({"configured": False})
     return snapshot
@@ -559,18 +575,55 @@ def _submit_aggregate_research_jsonl(result, source: Optional[str] = None) -> Di
 
 def check_research_connection(timeout_seconds: int = 10, backend: Optional[str] = None) -> Dict[str, Any]:
     selected = infer_research_backend(backend)
+    if not _is_valid_backend(selected):
+        return {
+            "backend": selected,
+            "preferred_backend": DEFAULT_HOSTED_RESEARCH_BACKEND,
+            "backend_order": list(RESEARCH_BACKEND_ORDER),
+            "legacy_fallback_backend": "airtable",
+            "configured": False,
+            "ok": False,
+            "reachable": False,
+            "invalid_backend": True,
+            "message": f"Unknown research backend '{selected}'. Use one of: supabase, jsonl, airtable.",
+        }
     if selected == "supabase":
-        return {"backend": "supabase", **check_supabase_connection(timeout_seconds=timeout_seconds)}
+        return {
+            "backend": "supabase",
+            "preferred_backend": DEFAULT_HOSTED_RESEARCH_BACKEND,
+            "backend_order": list(RESEARCH_BACKEND_ORDER),
+            "legacy_fallback_backend": "airtable",
+            **check_supabase_connection(timeout_seconds=timeout_seconds),
+        }
     if selected == "jsonl":
-        return {"backend": "jsonl", **check_jsonl_connection()}
+        return {
+            "backend": "jsonl",
+            "preferred_backend": DEFAULT_HOSTED_RESEARCH_BACKEND,
+            "backend_order": list(RESEARCH_BACKEND_ORDER),
+            "legacy_fallback_backend": "airtable",
+            **check_jsonl_connection(),
+        }
     if selected == "airtable":
-        return {"backend": "airtable", **check_airtable_connection(timeout_seconds=timeout_seconds)}
+        snapshot = check_airtable_connection(timeout_seconds=timeout_seconds)
+        if snapshot.get("ok"):
+            snapshot["message"] = "Airtable connection verified. This backend is supported only as a legacy compatibility fallback."
+        return {
+            "backend": "airtable",
+            "preferred_backend": DEFAULT_HOSTED_RESEARCH_BACKEND,
+            "backend_order": list(RESEARCH_BACKEND_ORDER),
+            "legacy_fallback_backend": "airtable",
+            "legacy_fallback": True,
+            **snapshot,
+        }
     return {
         "backend": "none",
+        "preferred_backend": DEFAULT_HOSTED_RESEARCH_BACKEND,
+        "backend_order": list(RESEARCH_BACKEND_ORDER),
+        "legacy_fallback_backend": "airtable",
         "configured": False,
         "ok": False,
         "reachable": False,
-        "message": "No research backend is configured.",
+        "message": "No research backend is configured. Supabase is the preferred hosted backend.",
     }
 
 
@@ -581,6 +634,10 @@ def submit_aggregate_research(
     backend: Optional[str] = None,
 ) -> Dict[str, Any]:
     selected = infer_research_backend(backend)
+    if not _is_valid_backend(selected):
+        raise ResearchSubmissionError(
+            f"Unknown research backend '{selected}'. Use one of: supabase, jsonl, airtable."
+        )
     if selected == "supabase":
         return _submit_aggregate_research_supabase(result, source=source, timeout_seconds=timeout_seconds)
     if selected == "jsonl":
@@ -588,8 +645,9 @@ def submit_aggregate_research(
     if selected == "airtable":
         response = _submit_aggregate_research_airtable(result, source=source, timeout_seconds=timeout_seconds)
         response["backend"] = "airtable"
+        response["legacy_fallback"] = True
         return response
     raise ResearchSubmissionError(
         "No research backend is configured. Set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY, "
-        "AIRA_RESEARCH_JSONL, or AIRTABLE_BASE_ID + AIRTABLE_TOKEN."
+        "AIRA_RESEARCH_JSONL, or AIRTABLE_BASE_ID + AIRTABLE_TOKEN. Supabase is the preferred hosted backend."
     )
