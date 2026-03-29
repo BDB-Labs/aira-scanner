@@ -1,5 +1,8 @@
 {
   "name": "aira-scanner",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@vercel/speed-insights": "^2.0.0"
+  }
 }
