@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from aira.llm import LLMConfig, LLMRoutingError, provider_health_snapshot
-from aira.research import ResearchSubmissionError, check_airtable_connection, submit_aggregate_research
+from aira.research import ResearchSubmissionError, check_research_connection, submit_aggregate_research
 from aira.scanner import AIRAScanner, result_to_json, result_to_yaml
 
 
@@ -155,13 +155,17 @@ def print_health(snapshot: dict) -> None:
     print()
 
 
-def print_airtable_health(snapshot: dict) -> None:
-    print(f"{C.BOLD}  AIRTABLE HEALTH{C.RESET}")
+def print_research_health(snapshot: dict) -> None:
+    print(f"{C.BOLD}  RESEARCH STORE HEALTH{C.RESET}")
     print(f"{'─'*55}")
     configured = f"{C.GREEN}yes{C.RESET}" if snapshot["configured"] else f"{C.RED}no{C.RESET}"
     reachable = f"{C.GREEN}yes{C.RESET}" if snapshot.get("reachable") else f"{C.RED}no{C.RESET}"
+    print(f"  Backend:        {snapshot.get('backend', 'unknown')}")
     print(f"  Configured:     {configured}")
-    print(f"  Table:          {snapshot['table']}")
+    if snapshot.get("table"):
+        print(f"  Table:          {snapshot['table']}")
+    if snapshot.get("path"):
+        print(f"  Path:           {snapshot['path']}")
     print(f"  Reachable:      {reachable}")
     print(f"  Message:        {snapshot.get('message', 'n/a')}")
     print()
@@ -203,7 +207,10 @@ def print_providers() -> None:
 def print_research_submission_status(response: dict) -> None:
     print(f"{C.BOLD}  RESEARCH SUBMISSION{C.RESET}")
     print(f"{'─'*55}")
-    print(f"  Airtable record: {response.get('id') or 'created'}")
+    print(f"  Backend:         {response.get('backend', 'unknown')}")
+    print(f"  Submission id:   {response.get('id') or 'created'}")
+    if response.get("path"):
+        print(f"  Output path:     {response['path']}")
     dropped = response.get("dropped_optional_fields") or []
     if dropped:
         print(f"  Optional fields dropped: {', '.join(dropped)}")
@@ -243,10 +250,10 @@ def add_research_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--submit-research-aggregate",
         action="store_true",
-        help="Submit aggregate-only scan metrics to Airtable for the research study",
+        help="Submit aggregate-only scan metrics to the configured research backend",
     )
     parser.add_argument("--research-source", help="Override the source label used for research submission")
-    parser.add_argument("--research-timeout", type=int, default=15, help="HTTP timeout for Airtable research submission")
+    parser.add_argument("--research-timeout", type=int, default=15, help="HTTP timeout for research backend submission")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -269,8 +276,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     health_parser = subparsers.add_parser("health", help="Show provider health/configuration")
     health_parser.add_argument("--json", action="store_true", help="Emit health snapshot as JSON")
-    health_parser.add_argument("--check-airtable", action="store_true", help="Verify Airtable connectivity")
-    health_parser.add_argument("--airtable-timeout", type=int, default=10, help="HTTP timeout for Airtable connectivity checks")
+    health_parser.add_argument(
+        "--check-research",
+        "--check-airtable",
+        dest="check_research",
+        action="store_true",
+        help="Verify research backend connectivity",
+    )
+    health_parser.add_argument("--research-timeout", type=int, default=10, help="HTTP timeout for research connectivity checks")
     add_llm_arguments(health_parser)
 
     providers_parser = subparsers.add_parser("providers", help="List supported providers and env vars")
@@ -345,18 +358,18 @@ def main() -> None:
 
     if args.command == "health":
         snapshot = provider_health_snapshot(build_llm_config(args))
-        airtable_snapshot = check_airtable_connection(timeout_seconds=args.airtable_timeout) if args.check_airtable else None
+        research_snapshot = check_research_connection(timeout_seconds=args.research_timeout) if args.check_research else None
         if args.json:
             payload = {"providers": snapshot}
-            if airtable_snapshot is not None:
-                payload["airtable"] = airtable_snapshot
+            if research_snapshot is not None:
+                payload["research"] = research_snapshot
             print(json.dumps(payload, indent=2))
         else:
             print_health(snapshot)
-            if airtable_snapshot is not None:
-                print_airtable_health(airtable_snapshot)
+            if research_snapshot is not None:
+                print_research_health(research_snapshot)
 
-        exit_ok = airtable_snapshot["ok"] if airtable_snapshot is not None else snapshot["ok"]
+        exit_ok = research_snapshot["ok"] if research_snapshot is not None else snapshot["ok"]
         sys.exit(0 if exit_ok else 1)
 
     if args.command == "providers":

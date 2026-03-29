@@ -60,11 +60,11 @@ aira scan ./my-project --exclude node_modules,dist,build
 # Fail on MEDIUM or above instead of only HIGH
 aira scan ./my-project --fail-on medium
 
-# Submit aggregate-only results to Airtable for the research study
+# Submit aggregate-only results to the configured research backend
 aira scan ./my-project --output json --submit-research-aggregate
 
-# Verify Airtable connectivity without writing a record
-aira health --check-airtable
+# Verify research backend connectivity without writing a record
+aira health --check-research
 ```
 
 ### VS Code Extension
@@ -141,7 +141,15 @@ export AIRA_OLLAMA_HOST="http://127.0.0.1:11434"
 export GROQ_API_KEY="..."
 export GROQ_MODEL="your-provider-model-id"
 
-# Airtable research submission
+# Preferred hosted backend: Supabase
+export SUPABASE_URL="https://your-project.supabase.co"
+export SUPABASE_SERVICE_ROLE_KEY="..."
+export SUPABASE_TABLE="aira_submissions"
+
+# Local/CI backend: newline-delimited JSON
+export AIRA_RESEARCH_JSONL="/absolute/path/to/aira-research.jsonl"
+
+# Airtable compatibility fallback
 export AIRTABLE_BASE_ID="app..."
 export AIRTABLE_TABLE="Submissions"
 export AIRTABLE_TOKEN="pat..."
@@ -149,7 +157,7 @@ export AIRTABLE_TOKEN="pat..."
 
 ## Research Submission
 
-The CLI can submit **aggregate-only** study data to Airtable:
+The CLI can submit **aggregate-only** study data to the configured research backend:
 
 ```bash
 aira scan . --output json --submit-research-aggregate
@@ -173,21 +181,15 @@ What is **not** sent:
 - snippets
 - raw file contents
 
-### Airtable table format
+### Research backends
 
-The CLI is compatible with the current minimal Airtable schema already implied by the web app proxy:
+Recommended:
 
-- `Submitted At`
-- `Checks JSON`
-- `High Count`
-- `Medium Count`
-- `Low Count`
-- `Total Findings`
-- `Checks Failed`
-- `Engine`
-- `Source`
+- Supabase for the hosted web scanner
+- JSONL for local and CI collection
+- Airtable only as a compatibility fallback
 
-If your Airtable table also includes richer optional fields, AIRA will populate them when present:
+If you still use Airtable, the CLI remains compatible with the current minimal schema already implied by the web app proxy, and will populate richer optional fields when present:
 
 - `Check Count JSON`
 - `Check Severity JSON`
@@ -204,7 +206,10 @@ If your Airtable table also includes richer optional fields, AIRA will populate 
 
 If one of those optional fields does not exist in Airtable yet, the CLI drops it and retries instead of failing the entire submission.
 
-The recommended Airtable layout is documented in [AIRTABLE_SCHEMA.md](/Users/billp/Documents/GitHub/aira-scanner/AIRTABLE_SCHEMA.md).
+The recommended storage layouts are documented in:
+
+- [SUPABASE_SCHEMA.sql](/Users/billp/Documents/GitHub/aira-scanner/SUPABASE_SCHEMA.sql)
+- [AIRTABLE_SCHEMA.md](/Users/billp/Documents/GitHub/aira-scanner/AIRTABLE_SCHEMA.md)
 
 ---
 

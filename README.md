@@ -99,17 +99,15 @@ The scanner currently supports:
   * `GEMINI_API_KEY` or `GOOGLE_API_KEY` with optional `GEMINI_MODEL`
   * `OPENROUTER_API_KEY` with `OPENROUTER_MODEL`
 * browser heuristic fallback for local deterministic triage when both cloud routing and server-side static scanning are unavailable
-* research submission through a server-side Airtable proxy when:
+* research submission through a server-side research backend
+* preferred hosted backend: Supabase
+* local/CI backend: JSONL append sink
+* Airtable remains available as a compatibility fallback
+* CLI/CI aggregate-only submission with `aira scan --submit-research-aggregate`
+* read-only CLI backend verification with `aira health --check-research`
+* direct web backend verification with `/api/research-health`
 
-  * `AIRTABLE_BASE_ID`
-  * `AIRTABLE_TABLE`
-  * `AIRTABLE_TOKEN`
-    are configured
-* CLI/CI aggregate-only submission to Airtable with `aira scan --submit-research-aggregate`
-* read-only CLI Airtable verification with `aira health --check-airtable`
-* direct web Airtable verification with `/api/airtable-health`
-
-No Airtable token is exposed in the browser.
+No research backend secret is exposed in the browser.
 
 ### Recommended zero-cost setup
 
@@ -137,13 +135,16 @@ curl https://your-domain.example/api/health
 
 You should see `groq` listed under `configured_providers` when `GROQ_API_KEY` is set.
 
-To verify Airtable specifically:
+To verify the configured research backend:
 
 ```bash
-curl https://your-domain.example/api/airtable-health
+curl https://your-domain.example/api/research-health
 ```
 
-The recommended Airtable table layout is documented in [AIRTABLE_SCHEMA.md](/Users/billp/Documents/GitHub/aira-scanner/AIRTABLE_SCHEMA.md).
+The recommended research storage layouts are documented in:
+
+- [SUPABASE_SCHEMA.sql](/Users/billp/Documents/GitHub/aira-scanner/SUPABASE_SCHEMA.sql)
+- [AIRTABLE_SCHEMA.md](/Users/billp/Documents/GitHub/aira-scanner/AIRTABLE_SCHEMA.md)
 
 To probe the deterministic static scan route directly:
 
@@ -151,6 +152,22 @@ To probe the deterministic static scan route directly:
 curl -X POST https://your-domain.example/api/static-scan \
   -H "Content-Type: application/json" \
   -d '{"lang":"python","code":"def ok():\n    return True\n"}'
+```
+
+### Recommended research backend
+
+If you want to get away from Airtable, use Supabase for the hosted scanner:
+
+```bash
+SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+SUPABASE_TABLE=aira_submissions
+```
+
+And use JSONL for local/CI collection:
+
+```bash
+AIRA_RESEARCH_JSONL=/absolute/path/to/aira-research.jsonl
 ```
 
 ---

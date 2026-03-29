@@ -1,4 +1,4 @@
-import { submitResearchRecord } from '../lib/airtable.js';
+import { submitResearchRecord } from '../lib/research-store.js';
 
 export const config = {
   api: {

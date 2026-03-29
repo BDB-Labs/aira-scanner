@@ -11,7 +11,9 @@ from urllib import error
 from aira.cli import main
 from aira.research import (
     build_aggregate_submission_fields,
+    build_structured_submission_record,
     check_airtable_connection,
+    check_research_connection,
     submit_aggregate_research,
 )
 from aira.scanner import ScanResult
@@ -124,6 +126,13 @@ class ResearchHelpersTests(unittest.TestCase):
         self.assertFalse(snapshot["ok"])
         self.assertIn("not configured", snapshot["message"])
 
+    def test_check_research_connection_reports_missing_backend(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            snapshot = check_research_connection()
+
+        self.assertEqual(snapshot["backend"], "none")
+        self.assertFalse(snapshot["ok"])
+
     def test_submit_aggregate_research_drops_unknown_optional_fields(self):
         bodies = []
 
@@ -157,6 +166,46 @@ class ResearchHelpersTests(unittest.TestCase):
         self.assertNotIn("Check Count JSON", bodies[1]["fields"])
         self.assertIn("Checks JSON", bodies[1]["fields"])
 
+    def test_submit_aggregate_research_can_use_jsonl_backend(self):
+        result = _sample_result()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sink = Path(tmpdir) / "research.jsonl"
+            with mock.patch.dict(os.environ, {"AIRA_RESEARCH_JSONL": str(sink)}, clear=True):
+                response = submit_aggregate_research(result)
+
+            lines = sink.read_text(encoding="utf-8").splitlines()
+
+        self.assertEqual(response["backend"], "jsonl")
+        self.assertEqual(len(lines), 1)
+        payload = json.loads(lines[0])
+        self.assertEqual(payload["source"], "aira-cli")
+        self.assertEqual(payload["check_severity_json"]["C03"]["HIGH"], 1)
+
+    def test_submit_aggregate_research_can_use_supabase_backend(self):
+        with mock.patch.dict(
+            os.environ,
+            {
+                "SUPABASE_URL": "https://example.supabase.co",
+                "SUPABASE_SERVICE_ROLE_KEY": "secret",
+                "SUPABASE_TABLE": "aira_submissions",
+            },
+            clear=True,
+        ):
+            with mock.patch("aira.research._supabase_request_json", return_value=[{"id": "row123"}]) as request_mock:
+                response = submit_aggregate_research(_sample_result())
+
+        self.assertEqual(response["backend"], "supabase")
+        self.assertEqual(response["id"], "row123")
+        request_mock.assert_called_once()
+
+    def test_structured_submission_record_contains_json_shapes(self):
+        record = build_structured_submission_record(_sample_result(), source="github:test/repo")
+
+        self.assertEqual(record["source"], "github:test/repo")
+        self.assertEqual(record["checks_json"]["success_integrity"], "FAIL")
+        self.assertEqual(record["check_count_json"]["C03"], 2)
+        self.assertEqual(record["check_severity_json"]["C03"]["MEDIUM"], 1)
+
     def test_scan_command_can_submit_aggregate_research(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target = Path(tmpdir) / "sample.py"
@@ -176,6 +225,18 @@ class ResearchHelpersTests(unittest.TestCase):
         self.assertEqual(exit_ctx.exception.code, 0)
         submit_mock.assert_called_once()
         self.assertIn("Research submission succeeded", stderr.getvalue())
+
+    def test_health_command_reports_research_backend_json(self):
+        stdout = io.StringIO()
+        with mock.patch("aira.cli.check_research_connection", return_value={"backend": "jsonl", "configured": True, "ok": True, "reachable": True, "message": "ok", "path": "/tmp/research.jsonl"}):
+            with mock.patch("sys.argv", ["aira", "health", "--check-research", "--json"]):
+                with redirect_stdout(stdout):
+                    with self.assertRaises(SystemExit) as exit_ctx:
+                        main()
+
+        self.assertEqual(exit_ctx.exception.code, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["research"]["backend"], "jsonl")
 
 
 if __name__ == "__main__":
