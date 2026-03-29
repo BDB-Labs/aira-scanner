@@ -1,0 +1,82 @@
+{
+  "name": "aira-scanner",
+  "displayName": "AIRA — AI-Induced Risk Audit",
+  "description": "Detects AI-generated code failure patterns driven by training incentives. Implements the AIRA v1.2 framework by William M. Parris / Bagelle Parris Vargas Consulting.",
+  "version": "1.2.0",
+  "publisher": "bageltech",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Linters", "Other"],
+  "keywords": ["ai", "code-quality", "audit", "governance", "static-analysis"],
+  "icon": "images/icon.png",
+  "activationEvents": ["onCommand:aira.scan", "onCommand:aira.scanFile"],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aira.scan",
+        "title": "AIRA: Scan Workspace",
+        "category": "AIRA"
+      },
+      {
+        "command": "aira.scanFile",
+        "title": "AIRA: Scan Current File",
+        "category": "AIRA"
+      }
+    ],
+    "configuration": {
+      "title": "AIRA Scanner",
+      "properties": {
+        "aira.pythonPath": {
+          "type": "string",
+          "default": "python3",
+          "description": "Path to Python interpreter with aira-scanner installed"
+        },
+        "aira.excludeDirs": {
+          "type": "array",
+          "default": ["node_modules", ".git", "__pycache__", "dist", "build"],
+          "description": "Directories to exclude from scanning"
+        },
+        "aira.showInlineDecorations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline warning decorations on flagged lines"
+        },
+        "aira.severityThreshold": {
+          "type": "string",
+          "enum": ["HIGH", "MEDIUM", "LOW"],
+          "default": "MEDIUM",
+          "description": "Minimum severity to show inline decorations"
+        }
+      }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "aira.scanFile",
+          "when": "resourceExtname =~ /\\.(py|js|ts|jsx|tsx)$/",
+          "group": "aira"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "aira.scan",
+          "group": "aira"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "echo 'No compile step needed for JS extension'",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bageltech/aira-scanner"
+  },
+  "license": "MIT"
+}
