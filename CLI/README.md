@@ -33,8 +33,20 @@ pip install aira-scanner
 ### CLI
 
 ```bash
-# Scan a directory (terminal output)
+# Static scan a directory (terminal output)
 aira scan ./my-project
+
+# Hybrid scan using your local/model provider configuration
+aira scan ./my-project --engine hybrid
+
+# LLM-only scan against a local OpenAI-compatible endpoint
+aira scan ./my-project --engine llm --provider openai-compatible --base-url http://localhost:1234/v1 --model gpt-oss-120b
+
+# Health check provider wiring
+aira health
+
+# List supported providers and env vars
+aira providers
 
 # Scan with YAML report
 aira scan ./my-project --output yaml
@@ -44,6 +56,9 @@ aira scan ./my-project --output json --out-file report.json
 
 # Exclude directories
 aira scan ./my-project --exclude node_modules,dist,build
+
+# Fail on MEDIUM or above instead of only HIGH
+aira scan ./my-project --fail-on medium
 ```
 
 ### VS Code Extension
@@ -84,6 +99,40 @@ Install from the VS Code Marketplace (search "AIRA Scanner") or from the `.vsix`
 - JavaScript (.js, .mjs, .cjs)
 - TypeScript (.ts)
 - JSX/TSX (.jsx, .tsx)
+
+---
+
+## Provider Modes
+
+AIRA CLI supports:
+
+- `static`: deterministic built-in analysis only
+- `llm`: provider-assisted analysis only
+- `hybrid`: merge static and LLM findings
+
+Provider routing is local-first:
+
+1. OpenAI-compatible local endpoint
+2. Ollama
+3. Groq
+4. Gemini
+5. OpenRouter
+
+Useful environment variables:
+
+```bash
+# OpenAI-compatible local or hosted endpoint
+export AIRA_OPENAI_BASE_URL="http://localhost:1234/v1"
+export AIRA_OPENAI_MODEL="gpt-oss-120b"
+
+# Ollama
+export AIRA_OLLAMA_MODEL="qwen3:32b"
+export AIRA_OLLAMA_HOST="http://127.0.0.1:11434"
+
+# Groq
+export GROQ_API_KEY="..."
+export GROQ_MODEL="your-provider-model-id"
+```
 
 ---
 
