@@ -1452,14 +1452,35 @@ ${findings.length > 0 ? `
 async function submitResearch() {
   if (!lastResult) return;
   const checks  = lastResult.checks  || {};
+  const findings = lastResult.findings || [];
   const summary = lastResult.summary || {};
   const meta    = lastResult.meta    || {};
+  const language = document.getElementById('lang-select')?.value || '';
+
+  const checkSeverity = Object.fromEntries(
+    Object.values(CHECK_LABELS).map(({ id }) => [id, { HIGH: 0, MEDIUM: 0, LOW: 0, TOTAL: 0 }])
+  );
+  for (const finding of findings) {
+    const checkId = finding.check_id || 'UNSPECIFIED';
+    if (!checkSeverity[checkId]) {
+      checkSeverity[checkId] = { HIGH: 0, MEDIUM: 0, LOW: 0, TOTAL: 0 };
+    }
+    const severity = ['HIGH', 'MEDIUM', 'LOW'].includes(finding.severity) ? finding.severity : 'LOW';
+    checkSeverity[checkId][severity] += 1;
+    checkSeverity[checkId].TOTAL += 1;
+  }
+  const checkCounts = Object.fromEntries(
+    Object.entries(checkSeverity).map(([checkId, bucket]) => [checkId, bucket.TOTAL])
+  );
 
   const payload = {
     submitted_at: new Date().toISOString(),
     checks,
     summary,
     meta,
+    language,
+    check_counts: checkCounts,
+    check_severity: checkSeverity,
     source: 'aira.bageltech.net'
   };
 
@@ -1481,7 +1502,7 @@ async function submitResearch() {
   } catch(err) {
     console.warn('Research submission failed:', err.message);
     const body = encodeURIComponent(
-      `AIRA Research Submission\n\nChecks:\n${JSON.stringify(checks, null, 2)}\n\nSummary:\n${JSON.stringify(summary, null, 2)}\n\nMeta:\n${JSON.stringify(meta, null, 2)}`
+      `AIRA Research Submission\n\nChecks:\n${JSON.stringify(checks, null, 2)}\n\nSummary:\n${JSON.stringify(summary, null, 2)}\n\nCheck Counts:\n${JSON.stringify(checkCounts, null, 2)}\n\nCheck Severity:\n${JSON.stringify(checkSeverity, null, 2)}\n\nMeta:\n${JSON.stringify(meta, null, 2)}`
     );
     window.location.href = `mailto:bill@bageltech.net?subject=AIRA Research Submission&body=${body}`;
   }

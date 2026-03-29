@@ -33,6 +33,7 @@ BASELINE_FIELD_ORDER = (
 
 OPTIONAL_FIELD_ORDER = (
     "Check Count JSON",
+    "Check Severity JSON",
     "Checks Passed",
     "Checks Unknown",
     "Files Scanned",
@@ -111,6 +112,23 @@ def build_check_finding_counts(result) -> Dict[str, int]:
     return counts
 
 
+def build_check_severity_counts(result) -> Dict[str, Dict[str, int]]:
+    severity_counts: Dict[str, Dict[str, int]] = {
+        f"C{index:02d}": {"HIGH": 0, "MEDIUM": 0, "LOW": 0, "TOTAL": 0}
+        for index in range(1, 16)
+    }
+    for finding in result.findings or []:
+        check_id = str(finding.get("check_id") or "UNSPECIFIED").upper()
+        if check_id not in severity_counts:
+            severity_counts[check_id] = {"HIGH": 0, "MEDIUM": 0, "LOW": 0, "TOTAL": 0}
+        severity = str(finding.get("severity") or "LOW").upper()
+        if severity not in {"HIGH", "MEDIUM", "LOW"}:
+            severity = "LOW"
+        severity_counts[check_id][severity] += 1
+        severity_counts[check_id]["TOTAL"] += 1
+    return severity_counts
+
+
 def build_baseline_submission_fields(result, source: Optional[str] = None) -> Dict[str, Any]:
     summary = result.summary or {}
     checks = result.check_results or {}
@@ -138,6 +156,7 @@ def build_optional_submission_fields(result) -> Dict[str, Any]:
 
     fields = {
         "Check Count JSON": json.dumps(build_check_finding_counts(result), sort_keys=True),
+        "Check Severity JSON": json.dumps(build_check_severity_counts(result), sort_keys=True),
         "Checks Passed": int(summary.get("checks_passed", 0)),
         "Checks Unknown": int(summary.get("checks_unknown", 0)),
         "Files Scanned": int(summary.get("files_scanned", 0)),

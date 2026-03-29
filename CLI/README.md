@@ -160,6 +160,7 @@ What is sent:
 - total findings
 - failed/passed/unknown check counts
 - per-check finding counts
+- per-check severity matrices
 - scan mode / provider / model metadata
 - CI metadata when available
 
@@ -187,6 +188,7 @@ The CLI is compatible with the current minimal Airtable schema already implied b
 If your Airtable table also includes richer optional fields, AIRA will populate them when present:
 
 - `Check Count JSON`
+- `Check Severity JSON`
 - `Checks Passed`
 - `Checks Unknown`
 - `Files Scanned`
@@ -199,6 +201,8 @@ If your Airtable table also includes richer optional fields, AIRA will populate 
 - `CI Ref`
 
 If one of those optional fields does not exist in Airtable yet, the CLI drops it and retries instead of failing the entire submission.
+
+The recommended Airtable layout is documented in [AIRTABLE_SCHEMA.md](/Users/billp/Documents/GitHub/aira-scanner/AIRTABLE_SCHEMA.md).
 
 ---
 

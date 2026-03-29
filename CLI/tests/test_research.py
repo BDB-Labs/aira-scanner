@@ -102,11 +102,16 @@ class ResearchHelpersTests(unittest.TestCase):
 
         fields = build_aggregate_submission_fields(result, source="github:bageltech/aira")
         count_json = json.loads(fields["Check Count JSON"])
+        severity_json = json.loads(fields["Check Severity JSON"])
 
         self.assertEqual(fields["Source"], "github:bageltech/aira")
         self.assertEqual(count_json["C03"], 2)
         self.assertEqual(count_json["C04"], 1)
         self.assertEqual(count_json["C01"], 0)
+        self.assertEqual(severity_json["C03"]["HIGH"], 1)
+        self.assertEqual(severity_json["C03"]["MEDIUM"], 1)
+        self.assertEqual(severity_json["C03"]["TOTAL"], 2)
+        self.assertEqual(severity_json["C04"]["LOW"], 1)
         serialized = json.dumps(fields, sort_keys=True)
         self.assertNotIn("src/a.py", serialized)
         self.assertNotIn("except Exception:", serialized)

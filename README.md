@@ -106,6 +106,7 @@ The scanner currently supports:
     are configured
 * CLI/CI aggregate-only submission to Airtable with `aira scan --submit-research-aggregate`
 * read-only CLI Airtable verification with `aira health --check-airtable`
+* direct web Airtable verification with `/api/airtable-health`
 
 No Airtable token is exposed in the browser.
 
@@ -134,6 +135,14 @@ curl https://your-domain.example/api/health
 ```
 
 You should see `groq` listed under `configured_providers` when `GROQ_API_KEY` is set.
+
+To verify Airtable specifically:
+
+```bash
+curl https://your-domain.example/api/airtable-health
+```
+
+The recommended Airtable table layout is documented in [AIRTABLE_SCHEMA.md](/Users/billp/Documents/GitHub/aira-scanner/AIRTABLE_SCHEMA.md).
 
 ---
 
