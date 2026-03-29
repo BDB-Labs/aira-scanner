@@ -92,12 +92,13 @@ Empirical datasets and expanded detection rules are in progress.
 The scanner currently supports:
 
 * `Auto` mode: routes through Groq first, then configured fallbacks
+* deterministic static scanning through `/api/static-scan`
 * optional cloud providers:
 
   * `GROQ_API_KEY` with optional `GROQ_MODEL`
   * `GEMINI_API_KEY` or `GOOGLE_API_KEY` with optional `GEMINI_MODEL`
   * `OPENROUTER_API_KEY` with `OPENROUTER_MODEL`
-* `Local heuristic` fallback for browser-only deterministic checks when model access is unavailable
+* browser heuristic fallback for local deterministic triage when both cloud routing and server-side static scanning are unavailable
 * research submission through a server-side Airtable proxy when:
 
   * `AIRTABLE_BASE_ID`
@@ -143,6 +144,14 @@ curl https://your-domain.example/api/airtable-health
 ```
 
 The recommended Airtable table layout is documented in [AIRTABLE_SCHEMA.md](/Users/billp/Documents/GitHub/aira-scanner/AIRTABLE_SCHEMA.md).
+
+To probe the deterministic static scan route directly:
+
+```bash
+curl -X POST https://your-domain.example/api/static-scan \
+  -H "Content-Type: application/json" \
+  -d '{"lang":"python","code":"def ok():\n    return True\n"}'
+```
 
 ---
 

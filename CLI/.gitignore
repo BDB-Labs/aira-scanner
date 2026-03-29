@@ -2,4 +2,4 @@ __pycache__/
 *.pyc
 .pytest_cache/
 aira-scanner-v1.2.zip
-{aira,tests,vscode-extension/
+vscode-extension/

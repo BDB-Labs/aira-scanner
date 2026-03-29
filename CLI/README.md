@@ -124,6 +124,8 @@ Provider routing is local-first:
 4. Gemini
 5. OpenRouter
 
+The web app also now uses a deterministic server-side static scan before falling back to browser-only heuristics. That static scan is parser-backed for Python and, when `esprima` is installed, parser-backed for JavaScript as well.
+
 Useful environment variables:
 
 ```bash

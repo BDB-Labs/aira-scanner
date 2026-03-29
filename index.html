@@ -393,7 +393,7 @@ def save_record(db, record):
       <select id="engine-select">
         <option value="auto">Auto (Recommended: Groq)</option>
         <option value="gemini">Gemini only</option>
-        <option value="heuristic">Local heuristic only</option>
+        <option value="heuristic">Deterministic static scan</option>
       </select>
       <button class="scan-btn" id="scan-btn" onclick="runScan()">
         <div class="spinner"></div>
@@ -402,7 +402,7 @@ def save_record(db, record):
     </div>
     <div class="engine-note">
       Recommended zero-cost setup: configure <code>GROQ_API_KEY</code> and leave the scanner in Auto mode.
-      It routes through Groq first, then any configured cloud fallbacks, and finally the browser-only heuristic scan if all cloud providers are unavailable.
+      It routes through Groq first, then any configured cloud fallbacks, then the deterministic parser-backed/static scan, and finally the browser-only heuristic scan if the server-side static scan is unavailable.
     </div>
 
     <!-- Loading -->
@@ -868,6 +868,43 @@ function providerLabel(provider) {
   return 'Cloud structured scan';
 }
 
+async function callDeterministicScanner(code, lang) {
+  const response = await fetch('/api/static-scan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, lang })
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Static scan error ${response.status}`);
+  }
+
+  const data = await response.json();
+  return normalizeScannerResult(data, data.meta || {
+    engine: 'deterministic-static',
+    engine_label: 'Deterministic static scan',
+    note: 'Server-side deterministic scan using static AIRA rules.'
+  });
+}
+
+async function callDeterministicOrBrowserFallback(code, lang, primaryMessage, browserFallbackNote) {
+  try {
+    if (primaryMessage) {
+      showToast(primaryMessage, 'success');
+    }
+    return await callDeterministicScanner(code, lang);
+  } catch (staticErr) {
+    console.warn('Deterministic scan unavailable:', staticErr.message);
+    showToast('Server-side deterministic scan unavailable. Falling back to browser heuristics.', 'success');
+    return buildHeuristicResult(code, lang, {
+      engine: 'heuristic',
+      engine_label: 'Browser heuristic fallback',
+      note: browserFallbackNote || 'Server-side deterministic scan was unavailable, so this result comes from browser heuristics.'
+    });
+  }
+}
+
 async function callCloudScanner(code, lang, provider) {
   const systemPrompt = `You are AIRA — the AI-Induced Risk Audit scanner v1.2.
 You audit code for truthful failure handling. Return JSON only.`;
@@ -903,11 +940,12 @@ You audit code for truthful failure handling. Return JSON only.`;
 async function callAIRAScanner(code, lang) {
   const engine = getScanEngine();
   if (engine === 'heuristic') {
-    return buildHeuristicResult(code, lang, {
-      engine: 'heuristic',
-      engine_label: 'Local heuristic scan',
-      note: 'Browser-only heuristic preview. Use this as a triage pass, not a final audit.'
-    });
+    return callDeterministicOrBrowserFallback(
+      code,
+      lang,
+      '',
+      'The deterministic static scan was unavailable, so this result comes from browser heuristics. Use this as a triage pass, not a final audit.'
+    );
   }
 
   try {
@@ -918,12 +956,12 @@ async function callAIRAScanner(code, lang) {
       throw err;
     }
 
-    showToast('Cloud routing unavailable. Falling back to the free local heuristic scan.', 'success');
-    return buildHeuristicResult(code, lang, {
-      engine: 'heuristic',
-      engine_label: 'Local heuristic fallback',
-      note: 'All configured cloud providers were unavailable, so this result comes from deterministic browser heuristics.'
-    });
+    return callDeterministicOrBrowserFallback(
+      code,
+      lang,
+      'Cloud routing unavailable. Falling back to the free deterministic static scan.',
+      'All configured cloud providers were unavailable, so this result comes from browser heuristics after the deterministic static scan also failed.'
+    );
   }
 }
 

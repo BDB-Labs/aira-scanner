@@ -3,10 +3,17 @@ AIRA JavaScript/TypeScript Checker
 Regex and heuristic-based analysis for JS/TS source files.
 """
 
+from __future__ import annotations
+
 import re
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Optional
+
+try:
+    import esprima
+except ImportError:  # pragma: no cover - optional parser dependency
+    esprima = None
 
 
 @dataclass
@@ -31,8 +38,28 @@ class JSChecker:
         self.source = Path(filepath).read_text(encoding="utf-8", errors="replace")
         self.lines = self.source.splitlines()
         self.findings: List[Finding] = []
+        self._seen = set()
+        self.tree = None
+        self.parse_ok = False
+        if esprima is not None:
+            try:
+                self.tree = esprima.parseModule(self.source, loc=True, tolerant=True)
+                self.parse_ok = True
+            except Exception:
+                try:
+                    self.tree = esprima.parseScript(self.source, loc=True, tolerant=True)
+                    self.parse_ok = True
+                except Exception:
+                    self.tree = None
+                    self.parse_ok = False
 
     def run(self) -> List[Finding]:
+        if self.parse_ok:
+            self._check_broad_exception_suppression_ast()
+            self._check_success_integrity_ast()
+            self._check_audit_integrity_ast()
+            self._check_ambiguous_returns_ast()
+            self._check_startup_integrity_ast()
         self._check_broad_exception_suppression()
         self._check_success_integrity()
         self._check_background_tasks()
@@ -52,6 +79,10 @@ class JSChecker:
         return self.lines[idx].strip() if 0 <= idx < len(self.lines) else ""
 
     def _add(self, check_id, check_name, severity, line, description):
+        dedupe_key = (check_id, line, description)
+        if dedupe_key in self._seen:
+            return
+        self._seen.add(dedupe_key)
         self.findings.append(Finding(
             check_id=check_id,
             check_name=check_name,
@@ -66,6 +97,175 @@ class JSChecker:
         start = max(0, lineno - 1 - before)
         end = min(len(self.lines), lineno + after)
         return "\n".join(self.lines[start:end])
+
+    def _iter_nodes(self, node):
+        if node is None:
+            return
+        if isinstance(node, list):
+            for item in node:
+                yield from self._iter_nodes(item)
+            return
+        if hasattr(node, "type"):
+            yield node
+            for value in vars(node).values():
+                if isinstance(value, (str, int, float, bool, type(None))):
+                    continue
+                yield from self._iter_nodes(value)
+
+    def _loc(self, node) -> int:
+        return getattr(getattr(node, "loc", None), "start", None).line if getattr(getattr(node, "loc", None), "start", None) else 0
+
+    def _member_name(self, node) -> str:
+        if node is None:
+            return ""
+        if getattr(node, "type", None) == "Identifier":
+            return node.name
+        if getattr(node, "type", None) == "MemberExpression":
+            object_name = self._member_name(getattr(node, "object", None))
+            property_name = self._member_name(getattr(node, "property", None))
+            return ".".join(part for part in (object_name, property_name) if part)
+        return ""
+
+    def _has_throw(self, node) -> bool:
+        return any(getattr(child, "type", None) == "ThrowStatement" for child in self._iter_nodes(node))
+
+    def _returns_success_like(self, node) -> bool:
+        for child in self._iter_nodes(node):
+            child_type = getattr(child, "type", None)
+            if child_type == "ReturnStatement":
+                argument = getattr(child, "argument", None)
+                if getattr(argument, "type", None) == "Literal" and argument.value is True:
+                    return True
+                if getattr(argument, "type", None) == "ObjectExpression":
+                    for prop in getattr(argument, "properties", []):
+                        key = getattr(getattr(prop, "key", None), "name", None)
+                        if key is None and hasattr(getattr(prop, "key", None), "value"):
+                            key = str(prop.key.value)
+                        value = getattr(prop, "value", None)
+                        if str(key).lower() in {"success", "status", "ok", "result"} and getattr(value, "value", None) is True:
+                            return True
+            if child_type == "CallExpression":
+                callee_name = self._member_name(getattr(child, "callee", None))
+                if callee_name.endswith("resolve"):
+                    first_arg = (getattr(child, "arguments", None) or [None])[0]
+                    if getattr(first_arg, "type", None) == "Literal" and first_arg.value is True:
+                        return True
+        return False
+
+    def _is_console_only(self, statements) -> bool:
+        if not statements:
+            return True
+        for statement in statements:
+            st_type = getattr(statement, "type", None)
+            if st_type == "EmptyStatement":
+                continue
+            if st_type != "ExpressionStatement":
+                return False
+            expression = getattr(statement, "expression", None)
+            if getattr(expression, "type", None) != "CallExpression":
+                return False
+            callee_name = self._member_name(getattr(expression, "callee", None))
+            if not callee_name.startswith("console."):
+                return False
+        return True
+
+    def _audit_calls_in_try(self, node):
+        audit_terms = ("audit", "evidence", "logevent", "writeaudit", "recordevent", "flushaudit")
+        calls = []
+        for child in self._iter_nodes(node):
+            if getattr(child, "type", None) != "CallExpression":
+                continue
+            callee_name = self._member_name(getattr(child, "callee", None))
+            if any(term in callee_name.replace(".", "").lower() for term in audit_terms):
+                calls.append((callee_name, self._loc(child)))
+        return calls
+
+    def _function_name(self, node) -> str:
+        node_type = getattr(node, "type", None)
+        if node_type == "FunctionDeclaration":
+            return getattr(getattr(node, "id", None), "name", "") or ""
+        return ""
+
+    def _iter_function_returns(self, node):
+        for child in self._iter_nodes(getattr(node, "body", None)):
+            if child is node:
+                continue
+            if getattr(child, "type", None) in {"FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"}:
+                continue
+            if getattr(child, "type", None) == "ReturnStatement":
+                yield child
+
+    def _check_broad_exception_suppression_ast(self):
+        for node in self._iter_nodes(self.tree):
+            if getattr(node, "type", None) != "TryStatement" or getattr(node, "handler", None) is None:
+                continue
+            handler = node.handler
+            statements = getattr(getattr(handler, "body", None), "body", []) or []
+            line = self._loc(handler) or self._loc(node)
+            if not statements:
+                self._add("C03", "BROAD EXCEPTION SUPPRESSION", "HIGH", line, "Empty catch block — exception silently swallowed")
+                continue
+            if self._has_throw(handler):
+                continue
+            if self._is_console_only(statements):
+                self._add("C03", "BROAD EXCEPTION SUPPRESSION", "HIGH", line, "Catch block only logs — failure semantics lost, no re-throw")
+            else:
+                self._add("C03", "BROAD EXCEPTION SUPPRESSION", "MEDIUM", line, "Catch block does not throw or reject — verify failure is intentionally absorbed")
+
+    def _check_success_integrity_ast(self):
+        for node in self._iter_nodes(self.tree):
+            if getattr(node, "type", None) != "TryStatement" or getattr(node, "handler", None) is None:
+                continue
+            handler = node.handler
+            if self._returns_success_like(handler):
+                self._add("C01", "SUCCESS INTEGRITY", "HIGH", self._loc(handler) or self._loc(node), "Catch block returns success-like data after an exception path")
+
+    def _check_audit_integrity_ast(self):
+        for node in self._iter_nodes(self.tree):
+            if getattr(node, "type", None) != "TryStatement" or getattr(node, "handler", None) is None:
+                continue
+            if self._has_throw(node.handler):
+                continue
+            for call_name, line in self._audit_calls_in_try(node.block):
+                self._add("C02", "AUDIT / EVIDENCE INTEGRITY", "HIGH", line or self._loc(node), f"Audit operation '{call_name}' is inside a try/catch that does not re-throw — evidence loss possible")
+
+    def _check_ambiguous_returns_ast(self):
+        for node in self._iter_nodes(self.tree):
+            if getattr(node, "type", None) not in {"FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"}:
+                continue
+            null_like_lines = []
+            for ret in self._iter_function_returns(node):
+                argument = getattr(ret, "argument", None)
+                if getattr(argument, "type", None) == "Literal" and argument.value in {None, False}:
+                    null_like_lines.append(self._loc(ret))
+                elif getattr(argument, "type", None) == "Identifier" and getattr(argument, "name", "") == "undefined":
+                    null_like_lines.append(self._loc(ret))
+            if len(null_like_lines) >= 2:
+                fn_name = self._function_name(node) or "anonymous function"
+                self._add("C06", "AMBIGUOUS RETURN CONTRACTS", "MEDIUM", self._loc(node), f"{fn_name} returns null/undefined/false in {len(null_like_lines)} locations — caller may not distinguish failure vs absence vs disabled")
+
+    def _check_startup_integrity_ast(self):
+        startup_keywords = ("init", "startup", "bootstrap", "setup", "onstart")
+        for node in self._iter_nodes(self.tree):
+            if getattr(node, "type", None) != "FunctionDeclaration":
+                continue
+            fn_name = self._function_name(node).lower()
+            if not any(keyword in fn_name for keyword in startup_keywords):
+                continue
+            for child in self._iter_nodes(getattr(node, "body", None)):
+                if getattr(child, "type", None) != "TryStatement" or getattr(child, "handler", None) is None:
+                    continue
+                if self._has_throw(child.handler):
+                    continue
+                handler_statements = getattr(getattr(child.handler, "body", None), "body", []) or []
+                has_process_exit = any(
+                    getattr(statement, "type", None) == "ExpressionStatement"
+                    and self._member_name(getattr(getattr(statement, "expression", None), "callee", None)) == "process.exit"
+                    for statement in handler_statements
+                    if getattr(getattr(statement, "expression", None), "type", None) == "CallExpression"
+                )
+                if not has_process_exit:
+                    self._add("C10", "STARTUP INTEGRITY", "HIGH", self._loc(child.handler) or self._loc(child), f"Startup function '{fn_name}' catches exception without halting")
 
     # ── CHECK 3: Broad Exception Suppression ─────────────────────
     def _check_broad_exception_suppression(self):
