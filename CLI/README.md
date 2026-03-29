@@ -59,6 +59,12 @@ aira scan ./my-project --exclude node_modules,dist,build
 
 # Fail on MEDIUM or above instead of only HIGH
 aira scan ./my-project --fail-on medium
+
+# Submit aggregate-only results to Airtable for the research study
+aira scan ./my-project --output json --submit-research-aggregate
+
+# Verify Airtable connectivity without writing a record
+aira health --check-airtable
 ```
 
 ### VS Code Extension
@@ -132,7 +138,67 @@ export AIRA_OLLAMA_HOST="http://127.0.0.1:11434"
 # Groq
 export GROQ_API_KEY="..."
 export GROQ_MODEL="your-provider-model-id"
+
+# Airtable research submission
+export AIRTABLE_BASE_ID="app..."
+export AIRTABLE_TABLE="Submissions"
+export AIRTABLE_TOKEN="pat..."
 ```
+
+## Research Submission
+
+The CLI can submit **aggregate-only** study data to Airtable:
+
+```bash
+aira scan . --output json --submit-research-aggregate
+```
+
+What is sent:
+
+- AIRA check statuses
+- severity totals
+- total findings
+- failed/passed/unknown check counts
+- per-check finding counts
+- scan mode / provider / model metadata
+- CI metadata when available
+
+What is **not** sent:
+
+- source code
+- file paths from findings
+- snippets
+- raw file contents
+
+### Airtable table format
+
+The CLI is compatible with the current minimal Airtable schema already implied by the web app proxy:
+
+- `Submitted At`
+- `Checks JSON`
+- `High Count`
+- `Medium Count`
+- `Low Count`
+- `Total Findings`
+- `Checks Failed`
+- `Engine`
+- `Source`
+
+If your Airtable table also includes richer optional fields, AIRA will populate them when present:
+
+- `Check Count JSON`
+- `Checks Passed`
+- `Checks Unknown`
+- `Files Scanned`
+- `Scan Mode`
+- `Provider`
+- `Model`
+- `Target Kind`
+- `CI Workflow`
+- `CI Run ID`
+- `CI Ref`
+
+If one of those optional fields does not exist in Airtable yet, the CLI drops it and retries instead of failing the entire submission.
 
 ---
 

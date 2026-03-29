@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from aira.llm import LLMConfig, LLMRoutingError, provider_health_snapshot
+from aira.research import ResearchSubmissionError, check_airtable_connection, submit_aggregate_research
 from aira.scanner import AIRAScanner, result_to_json, result_to_yaml
 
 
@@ -154,6 +155,18 @@ def print_health(snapshot: dict) -> None:
     print()
 
 
+def print_airtable_health(snapshot: dict) -> None:
+    print(f"{C.BOLD}  AIRTABLE HEALTH{C.RESET}")
+    print(f"{'─'*55}")
+    configured = f"{C.GREEN}yes{C.RESET}" if snapshot["configured"] else f"{C.RED}no{C.RESET}"
+    reachable = f"{C.GREEN}yes{C.RESET}" if snapshot.get("reachable") else f"{C.RED}no{C.RESET}"
+    print(f"  Configured:     {configured}")
+    print(f"  Table:          {snapshot['table']}")
+    print(f"  Reachable:      {reachable}")
+    print(f"  Message:        {snapshot.get('message', 'n/a')}")
+    print()
+
+
 def print_providers() -> None:
     print_banner()
     print(f"{C.BOLD}  SUPPORTED PROVIDERS{C.RESET}")
@@ -187,6 +200,22 @@ def print_providers() -> None:
     print()
 
 
+def print_research_submission_status(response: dict) -> None:
+    print(f"{C.BOLD}  RESEARCH SUBMISSION{C.RESET}")
+    print(f"{'─'*55}")
+    print(f"  Airtable record: {response.get('id') or 'created'}")
+    dropped = response.get("dropped_optional_fields") or []
+    if dropped:
+        print(f"  Optional fields dropped: {', '.join(dropped)}")
+    else:
+        print("  Optional fields dropped: none")
+    print()
+
+
+def print_research_submission_error(message: str) -> None:
+    print(f"{C.RED}Research submission failed: {message}{C.RESET}", file=sys.stderr)
+
+
 def exit_code_for_result(result, fail_on: str) -> int:
     threshold = FAIL_THRESHOLD[fail_on]
     if threshold is None:
@@ -210,6 +239,16 @@ def add_llm_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--max-context-chars", type=int, default=120_000, help="Maximum source characters sent to LLM scans")
 
 
+def add_research_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--submit-research-aggregate",
+        action="store_true",
+        help="Submit aggregate-only scan metrics to Airtable for the research study",
+    )
+    parser.add_argument("--research-source", help="Override the source label used for research submission")
+    parser.add_argument("--research-timeout", type=int, default=15, help="HTTP timeout for Airtable research submission")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="aira", description="AIRA — AI-Induced Risk Audit scanner")
     subparsers = parser.add_subparsers(dest="command")
@@ -226,9 +265,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exit with code 1 when findings at or above this severity exist",
     )
     add_llm_arguments(scan_parser)
+    add_research_arguments(scan_parser)
 
     health_parser = subparsers.add_parser("health", help="Show provider health/configuration")
     health_parser.add_argument("--json", action="store_true", help="Emit health snapshot as JSON")
+    health_parser.add_argument("--check-airtable", action="store_true", help="Verify Airtable connectivity")
+    health_parser.add_argument("--airtable-timeout", type=int, default=10, help="HTTP timeout for Airtable connectivity checks")
     add_llm_arguments(health_parser)
 
     providers_parser = subparsers.add_parser("providers", help="List supported providers and env vars")
@@ -257,6 +299,18 @@ def main() -> None:
             print(f"{C.RED}LLM scan failed: {exc}{C.RESET}", file=sys.stderr)
             sys.exit(2)
 
+        research_response = None
+        if args.submit_research_aggregate:
+            try:
+                research_response = submit_aggregate_research(
+                    result,
+                    source=args.research_source,
+                    timeout_seconds=args.research_timeout,
+                )
+            except ResearchSubmissionError as exc:
+                print_research_submission_error(str(exc))
+                sys.exit(2)
+
         if args.output == "terminal":
             print_banner()
             print(f"  Scanning: {C.BOLD}{target}{C.RESET}")
@@ -265,12 +319,21 @@ def main() -> None:
             print_check_results(result)
             print_findings(result)
             print_human_review_notice()
+            if research_response is not None:
+                print_research_submission_status(research_response)
         else:
             output = result_to_yaml(result) if args.output == "yaml" else result_to_json(result)
             if args.out_file:
                 Path(args.out_file).write_text(output, encoding="utf-8")
             else:
                 print(output)
+            if research_response is not None:
+                dropped = research_response.get("dropped_optional_fields") or []
+                dropped_msg = f" (dropped optional fields: {', '.join(dropped)})" if dropped else ""
+                print(
+                    f"Research submission succeeded: Airtable record {research_response.get('id') or 'created'}{dropped_msg}",
+                    file=sys.stderr,
+                )
 
         exit_code = exit_code_for_result(result, args.fail_on)
         if args.output == "terminal":
@@ -282,11 +345,19 @@ def main() -> None:
 
     if args.command == "health":
         snapshot = provider_health_snapshot(build_llm_config(args))
+        airtable_snapshot = check_airtable_connection(timeout_seconds=args.airtable_timeout) if args.check_airtable else None
         if args.json:
-            print(json.dumps(snapshot, indent=2))
+            payload = {"providers": snapshot}
+            if airtable_snapshot is not None:
+                payload["airtable"] = airtable_snapshot
+            print(json.dumps(payload, indent=2))
         else:
             print_health(snapshot)
-        sys.exit(0 if snapshot["ok"] else 1)
+            if airtable_snapshot is not None:
+                print_airtable_health(airtable_snapshot)
+
+        exit_ok = airtable_snapshot["ok"] if airtable_snapshot is not None else snapshot["ok"]
+        sys.exit(0 if exit_ok else 1)
 
     if args.command == "providers":
         if args.json:

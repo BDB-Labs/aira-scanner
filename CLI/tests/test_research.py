@@ -1,0 +1,177 @@
+import io
+import json
+import os
+import tempfile
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
+from unittest import mock
+from urllib import error
+
+from aira.cli import main
+from aira.research import (
+    build_aggregate_submission_fields,
+    check_airtable_connection,
+    submit_aggregate_research,
+)
+from aira.scanner import ScanResult
+
+
+class _FakeResponse:
+    def __init__(self, payload):
+        self.payload = json.dumps(payload).encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self):
+        return self.payload
+
+
+def _sample_result() -> ScanResult:
+    return ScanResult(
+        target="/tmp/project",
+        scanned_at="2026-03-28T00:00:00+00:00",
+        files_scanned=3,
+        findings_total=3,
+        check_results={
+            "success_integrity": "FAIL",
+            "audit_integrity": "PASS",
+            "exception_handling": "FAIL",
+            "fallback_control": "FAIL",
+            "bypass_controls": "PASS",
+            "return_contracts": "PASS",
+            "logic_consistency": "UNKNOWN",
+            "background_tasks": "PASS",
+            "environment_safety": "PASS",
+            "startup_integrity": "PASS",
+            "determinism": "PASS",
+            "lineage": "UNKNOWN",
+            "confidence_representation": "PASS",
+            "test_coverage_symmetry": "PASS",
+            "idempotency_safety": "PASS",
+        },
+        findings=[
+            {
+                "check_id": "C03",
+                "check_name": "BROAD EXCEPTION SUPPRESSION",
+                "severity": "HIGH",
+                "file": "src/a.py",
+                "line": 10,
+                "description": "Broad except.",
+                "snippet": "except Exception:",
+            },
+            {
+                "check_id": "C03",
+                "check_name": "BROAD EXCEPTION SUPPRESSION",
+                "severity": "MEDIUM",
+                "file": "src/b.py",
+                "line": 22,
+                "description": "Broad except.",
+                "snippet": "except Exception:",
+            },
+            {
+                "check_id": "C04",
+                "check_name": "DISTRIBUTED FALLBACK / DEGRADED EXECUTION",
+                "severity": "LOW",
+                "file": "src/c.py",
+                "line": 30,
+                "description": "Silent fallback.",
+                "snippet": "return cached_value",
+            },
+        ],
+        summary={
+            "files_scanned": 3,
+            "findings_total": 3,
+            "by_severity": {"HIGH": 1, "MEDIUM": 1, "LOW": 1},
+            "checks_failed": 3,
+            "checks_passed": 10,
+            "checks_unknown": 2,
+            "requires_human_review": ["logic_consistency (C07)", "lineage (C12)"],
+        },
+        metadata={"mode": "hybrid", "provider": "groq", "model": "gpt-oss-120b", "engine": "llm"},
+    )
+
+
+class ResearchHelpersTests(unittest.TestCase):
+    def test_build_aggregate_submission_fields_include_per_check_counts_only(self):
+        result = _sample_result()
+
+        fields = build_aggregate_submission_fields(result, source="github:bageltech/aira")
+        count_json = json.loads(fields["Check Count JSON"])
+
+        self.assertEqual(fields["Source"], "github:bageltech/aira")
+        self.assertEqual(count_json["C03"], 2)
+        self.assertEqual(count_json["C04"], 1)
+        self.assertEqual(count_json["C01"], 0)
+        serialized = json.dumps(fields, sort_keys=True)
+        self.assertNotIn("src/a.py", serialized)
+        self.assertNotIn("except Exception:", serialized)
+
+    def test_check_airtable_connection_reports_missing_config(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            snapshot = check_airtable_connection()
+
+        self.assertFalse(snapshot["configured"])
+        self.assertFalse(snapshot["ok"])
+        self.assertIn("not configured", snapshot["message"])
+
+    def test_submit_aggregate_research_drops_unknown_optional_fields(self):
+        bodies = []
+
+        def fake_urlopen(req, timeout=0):  # noqa: ANN001
+            bodies.append(json.loads(req.data.decode("utf-8")))
+            if len(bodies) == 1:
+                raise error.HTTPError(
+                    req.full_url,
+                    422,
+                    "Unprocessable Entity",
+                    hdrs=None,
+                    fp=io.BytesIO(b'{"error":{"message":"Unknown field name: \\"Check Count JSON\\""}}'),
+                )
+            return _FakeResponse({"id": "rec123"})
+
+        with mock.patch.dict(
+            os.environ,
+            {
+                "AIRTABLE_BASE_ID": "app123",
+                "AIRTABLE_TABLE": "Submissions",
+                "AIRTABLE_TOKEN": "token123",
+            },
+            clear=True,
+        ):
+            with mock.patch("aira.research.request.urlopen", side_effect=fake_urlopen):
+                response = submit_aggregate_research(_sample_result())
+
+        self.assertEqual(response["id"], "rec123")
+        self.assertEqual(response["dropped_optional_fields"], ["Check Count JSON"])
+        self.assertIn("Check Count JSON", bodies[0]["fields"])
+        self.assertNotIn("Check Count JSON", bodies[1]["fields"])
+        self.assertIn("Checks JSON", bodies[1]["fields"])
+
+    def test_scan_command_can_submit_aggregate_research(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir) / "sample.py"
+            target.write_text("print('safe')\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            with mock.patch("aira.cli.submit_aggregate_research", return_value={"id": "rec123", "dropped_optional_fields": []}) as submit_mock:
+                with mock.patch(
+                    "sys.argv",
+                    ["aira", "scan", str(target), "--output", "json", "--engine", "static", "--submit-research-aggregate"],
+                ):
+                    with redirect_stdout(stdout), redirect_stderr(stderr):
+                        with self.assertRaises(SystemExit) as exit_ctx:
+                            main()
+
+        self.assertEqual(exit_ctx.exception.code, 0)
+        submit_mock.assert_called_once()
+        self.assertIn("Research submission succeeded", stderr.getvalue())
+
+
+if __name__ == "__main__":
+    unittest.main()

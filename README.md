@@ -104,6 +104,8 @@ The scanner currently supports:
   * `AIRTABLE_TABLE`
   * `AIRTABLE_TOKEN`
     are configured
+* CLI/CI aggregate-only submission to Airtable with `aira scan --submit-research-aggregate`
+* read-only CLI Airtable verification with `aira health --check-airtable`
 
 No Airtable token is exposed in the browser.
 
