@@ -137,6 +137,9 @@ export AIRA_OPENAI_MODEL="gpt-oss-120b"
 export AIRA_OLLAMA_MODEL="qwen3:32b"
 export AIRA_OLLAMA_HOST="http://127.0.0.1:11434"
 
+# Discover available Ollama models and validate the selected one
+aira health --json
+
 # Groq
 export GROQ_API_KEY="..."
 export GROQ_MODEL="your-provider-model-id"

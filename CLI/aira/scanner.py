@@ -393,9 +393,12 @@ Code snapshot:
         findings = []
         for item in raw.get("findings", []) if isinstance(raw.get("findings"), list) else []:
             check_id = item.get("check_id", "")
+            normalized_check_id = check_id or CHECK_ID_BY_KEY.get(item.get("check_key", ""), "C00")
+            if normalized_check_id in {"C07", "C12"}:
+                continue
             check_name = item.get("check_name") or CHECKS.get(check_id, ("", "UNSPECIFIED"))[1]
             findings.append({
-                "check_id": check_id or CHECK_ID_BY_KEY.get(item.get("check_key", ""), "C00"),
+                "check_id": normalized_check_id,
                 "check_name": check_name,
                 "severity": item.get("severity", "LOW"),
                 "file": str(item.get("file", "") or ""),

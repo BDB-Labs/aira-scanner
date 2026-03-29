@@ -93,6 +93,7 @@ The scanner currently supports:
 
 * `Auto` mode: routes through Groq first, then configured fallbacks
 * deterministic static scanning through `/api/static-scan`
+* Ollama model discovery in health surfaces, including available-model reporting and selected-model validation
 * optional cloud providers:
 
   * `GROQ_API_KEY` with optional `GROQ_MODEL`

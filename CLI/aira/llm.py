@@ -24,6 +24,7 @@ AUTO_PROVIDER_ORDER = (
 )
 MAX_ATTEMPTS_PER_PROVIDER = 2
 DEFAULT_TIMEOUT_SECONDS = 45
+OLLAMA_DISCOVERY_TIMEOUT_SECONDS = 5
 
 
 class LLMRoutingError(RuntimeError):
@@ -50,7 +51,7 @@ def _env(*names: str) -> Optional[str]:
 
 
 def _provider_model(provider: str, config: Optional[LLMConfig] = None) -> Optional[str]:
-    if config and config.model:
+    if config and config.model and config.model != "auto":
         return config.model
 
     if provider == "openai-compatible":
@@ -103,28 +104,16 @@ def _is_configured(provider: str, config: Optional[LLMConfig] = None) -> bool:
     return False
 
 
-def provider_health_snapshot(config: Optional[LLMConfig] = None) -> Dict[str, Any]:
-    configured = [provider for provider in AUTO_PROVIDER_ORDER if _is_configured(provider, config)]
-    return {
-        "ok": bool(configured),
-        "recommended_provider": "openai-compatible or ollama" if configured and configured[0] in {"openai-compatible", "ollama"} else "openai-compatible",
-        "auto_provider_order": list(AUTO_PROVIDER_ORDER),
-        "configured_providers": configured,
-        "static_fallback": True,
-        "providers": {
-            provider: {
-                "configured": provider in configured,
-                "model": _provider_model(provider, config),
-                "base_url": _provider_base_url(provider, config),
-            }
-            for provider in AUTO_PROVIDER_ORDER
-        },
-    }
-
-
-def _post_json(url: str, payload: Dict[str, Any], headers: Dict[str, str], timeout_seconds: int) -> Dict[str, Any]:
-    body = json.dumps(payload).encode("utf-8")
-    req = request.Request(url, data=body, headers=headers, method="POST")
+def _request_json(
+    method: str,
+    url: str,
+    *,
+    headers: Optional[Dict[str, str]] = None,
+    payload: Optional[Dict[str, Any]] = None,
+    timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+) -> Dict[str, Any]:
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    req = request.Request(url, data=body, headers=headers or {}, method=method)
     try:
         with request.urlopen(req, timeout=timeout_seconds) as response:
             raw = response.read().decode("utf-8", errors="replace")
@@ -140,6 +129,72 @@ def _post_json(url: str, payload: Dict[str, Any], headers: Dict[str, str], timeo
     except error.URLError as exc:
         raise LLMRoutingError(str(exc.reason)) from exc
 
+
+def _fetch_ollama_models(base_url: str, timeout_seconds: int) -> List[Dict[str, Any]]:
+    data = _request_json(
+        "GET",
+        f"{base_url.rstrip('/')}/api/tags",
+        headers={"Content-Type": "application/json"},
+        timeout_seconds=timeout_seconds,
+    )
+    models = data.get("models")
+    return models if isinstance(models, list) else []
+
+
+def _ollama_snapshot(config: Optional[LLMConfig] = None) -> Dict[str, Any]:
+    base_url = _provider_base_url("ollama", config) or "http://127.0.0.1:11434"
+    selected_model = _provider_model("ollama", config)
+    snapshot = {
+        "configured": bool(selected_model),
+        "model": selected_model,
+        "base_url": base_url,
+        "reachable": False,
+        "available_models": [],
+        "selected_model_available": None,
+    }
+    try:
+        models = _fetch_ollama_models(base_url, timeout_seconds=OLLAMA_DISCOVERY_TIMEOUT_SECONDS)
+    except LLMRoutingError as exc:
+        snapshot["message"] = f"Ollama discovery failed: {exc}"
+        return snapshot
+
+    names = [str(model.get("name") or "").strip() for model in models if str(model.get("name") or "").strip()]
+    snapshot["reachable"] = True
+    snapshot["available_models"] = names
+    if selected_model:
+        snapshot["selected_model_available"] = selected_model in names
+    snapshot["configured"] = bool(selected_model)
+    return snapshot
+
+
+def provider_health_snapshot(config: Optional[LLMConfig] = None) -> Dict[str, Any]:
+    configured = [provider for provider in AUTO_PROVIDER_ORDER if _is_configured(provider, config)]
+    ollama_snapshot = _ollama_snapshot(config)
+    return {
+        "ok": bool(configured),
+        "recommended_provider": "openai-compatible or ollama" if configured and configured[0] in {"openai-compatible", "ollama"} else "openai-compatible",
+        "auto_provider_order": list(AUTO_PROVIDER_ORDER),
+        "configured_providers": configured,
+        "static_fallback": True,
+        "providers": {
+            provider: {
+                "configured": provider in configured,
+                "model": _provider_model(provider, config),
+                "base_url": _provider_base_url(provider, config),
+                **(
+                    {
+                        "reachable": ollama_snapshot["reachable"],
+                        "available_models": ollama_snapshot["available_models"],
+                        "selected_model_available": ollama_snapshot["selected_model_available"],
+                        **({"message": ollama_snapshot["message"]} if ollama_snapshot.get("message") else {}),
+                    }
+                    if provider == "ollama"
+                    else {}
+                ),
+            }
+            for provider in AUTO_PROVIDER_ORDER
+        },
+    }
 
 def _parse_openai_compatible_content(data: Dict[str, Any]) -> str:
     content = ((data.get("choices") or [{}])[0].get("message") or {}).get("content")
@@ -181,11 +236,12 @@ def _call_openai_compatible(config: LLMConfig, provider: str) -> Dict[str, Any]:
         "response_format": {"type": "json_object"},
         "messages": _build_messages(config.system_prompt, config.user_prompt),
     }
-    data = _post_json(
+    data = _request_json(
+        "POST",
         f"{base_url}/chat/completions",
-        payload,
-        headers,
-        config.timeout_seconds,
+        payload=payload,
+        headers=headers,
+        timeout_seconds=config.timeout_seconds,
     )
     return {
         "provider": provider,
@@ -200,6 +256,21 @@ def _call_ollama(config: LLMConfig) -> Dict[str, Any]:
     if not base_url or not model:
         raise LLMRoutingError("ollama is not configured.")
 
+    available_models = []
+    try:
+        available_models = [
+            str(entry.get("name") or "").strip()
+            for entry in _fetch_ollama_models(base_url, timeout_seconds=min(config.timeout_seconds, OLLAMA_DISCOVERY_TIMEOUT_SECONDS))
+            if str(entry.get("name") or "").strip()
+        ]
+    except LLMRoutingError:
+        available_models = []
+
+    if available_models and model not in available_models:
+        sample = ", ".join(available_models[:10])
+        more = " ..." if len(available_models) > 10 else ""
+        raise LLMRoutingError(f"Selected Ollama model '{model}' is not available. Available models: {sample}{more}")
+
     payload = {
         "model": model,
         "stream": False,
@@ -207,11 +278,12 @@ def _call_ollama(config: LLMConfig) -> Dict[str, Any]:
         "messages": _build_messages(config.system_prompt, config.user_prompt),
         "options": {"temperature": 0},
     }
-    data = _post_json(
+    data = _request_json(
+        "POST",
         f"{base_url}/api/chat",
-        payload,
-        {"Content-Type": "application/json"},
-        config.timeout_seconds,
+        payload=payload,
+        headers={"Content-Type": "application/json"},
+        timeout_seconds=config.timeout_seconds,
     )
     content = ((data.get("message") or {}).get("content") or "").strip()
     return {
@@ -234,14 +306,15 @@ def _call_groq(config: LLMConfig) -> Dict[str, Any]:
         "response_format": {"type": "json_object"},
         "messages": _build_messages(config.system_prompt, config.user_prompt),
     }
-    data = _post_json(
+    data = _request_json(
+        "POST",
         f"{base_url}/chat/completions",
-        payload,
-        {
+        payload=payload,
+        headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
-        config.timeout_seconds,
+        timeout_seconds=config.timeout_seconds,
     )
     return {
         "provider": "groq",
@@ -262,14 +335,15 @@ def _call_openrouter(config: LLMConfig) -> Dict[str, Any]:
         "response_format": {"type": "json_object"},
         "messages": _build_messages(config.system_prompt, config.user_prompt),
     }
-    data = _post_json(
+    data = _request_json(
+        "POST",
         "https://openrouter.ai/api/v1/chat/completions",
-        payload,
-        {
+        payload=payload,
+        headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
-        config.timeout_seconds,
+        timeout_seconds=config.timeout_seconds,
     )
     return {
         "provider": "openrouter",
@@ -292,11 +366,12 @@ def _call_gemini(config: LLMConfig) -> Dict[str, Any]:
             "responseMimeType": "application/json",
         },
     }
-    data = _post_json(
+    data = _request_json(
+        "POST",
         f"https://generativelanguage.googleapis.com/v1beta/models/{parse.quote(model)}:generateContent?key={parse.quote(api_key)}",
-        payload,
-        {"Content-Type": "application/json"},
-        config.timeout_seconds,
+        payload=payload,
+        headers={"Content-Type": "application/json"},
+        timeout_seconds=config.timeout_seconds,
     )
     text = "".join(
         part.get("text", "")

@@ -81,6 +81,52 @@ class ScannerModeTests(unittest.TestCase):
         self.assertEqual(result.check_results["logic_consistency"], "UNKNOWN")
         self.assertEqual(result.findings[0]["check_id"], "C05")
 
+    def test_llm_mode_drops_human_review_only_findings(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir) / "sample.py"
+            target.write_text("print('hello')\n", encoding="utf-8")
+
+            scanner = AIRAScanner(str(target))
+            fake_response = {
+                "provider": "ollama",
+                "model": "minimax-m2:cloud",
+                "text": json.dumps(
+                    {
+                        "ai_failure_audit": {
+                            "logic_consistency": "FAIL",
+                            "lineage": "FAIL",
+                        },
+                        "findings": [
+                            {
+                                "check_id": "C07",
+                                "check_name": "PARALLEL LOGIC DRIFT",
+                                "severity": "HIGH",
+                                "file": "sample.py",
+                                "line": 1,
+                                "description": "Human-review check should not survive normalization.",
+                                "snippet": "print('hello')",
+                            },
+                            {
+                                "check_id": "C12",
+                                "check_name": "SOURCE-TO-OUTPUT LINEAGE",
+                                "severity": "HIGH",
+                                "file": "sample.py",
+                                "line": 1,
+                                "description": "Human-review check should not survive normalization.",
+                                "snippet": "print('hello')",
+                            },
+                        ],
+                    }
+                ),
+            }
+
+            with mock.patch("aira.scanner.run_llm_json_audit", return_value=fake_response):
+                result = scanner.scan(mode="llm", llm_config=LLMConfig(provider="ollama", model="minimax-m2:cloud"))
+
+        self.assertEqual(result.check_results["logic_consistency"], "UNKNOWN")
+        self.assertEqual(result.check_results["lineage"], "UNKNOWN")
+        self.assertEqual(result.findings, [])
+
 
 if __name__ == "__main__":
     unittest.main()

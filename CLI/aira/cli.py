@@ -152,6 +152,17 @@ def print_health(snapshot: dict) -> None:
         print(f"    model:        {model}")
         if base != "n/a":
             print(f"    base_url:     {base}")
+        available_models = info.get("available_models") or []
+        if available_models:
+            preview = ", ".join(available_models[:8])
+            more = " ..." if len(available_models) > 8 else ""
+            print(f"    available:    {preview}{more}")
+        if info.get("selected_model_available") is False:
+            print(f"    selected:     {C.RED}not installed in Ollama{C.RESET}")
+        elif info.get("selected_model_available") is True:
+            print(f"    selected:     {C.GREEN}present in Ollama{C.RESET}")
+        if info.get("message"):
+            print(f"    note:         {info['message']}")
     print()
 
 
@@ -186,6 +197,7 @@ def print_providers() -> None:
     print("  ollama")
     print("    Local-first path for users already running Ollama.")
     print("    Env: AIRA_OLLAMA_MODEL / OLLAMA_MODEL, optional AIRA_OLLAMA_HOST / OLLAMA_HOST")
+    print("    Use 'aira health --json' to see available models exposed by the running Ollama service.")
     print()
     print("  groq")
     print("    Fast cloud structured-output path.")
