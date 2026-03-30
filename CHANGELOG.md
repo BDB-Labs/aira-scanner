@@ -8,6 +8,7 @@ All notable changes to AIRA Scanner will be documented here.
 - Linked the new docs from the repository front door so the scanner's evolution is easier to reconstruct
 - Added Supabase research schema v2 with append-only submission streams, normalized submission checks, and FTI-v1 scoring
 - Disabled hosted public research writes by default so canonical records stay in internal curated CLI/CI workflows
+- Added a manifest-driven `aira collect` workflow for curated public-repo dataset collection
 
 ## [v1.2.0] - 2026-03-29
 

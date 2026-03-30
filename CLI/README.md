@@ -68,6 +68,9 @@ aira scan ./my-project --output json --submit-research-aggregate \
 
 # Verify research backend connectivity without writing a record
 aira health --check-research
+
+# Collect a curated public-repo dataset from a manifest
+aira collect ./docs/examples/public-collection.yaml --submit-research-aggregate
 ```
 
 ### VS Code Extension
@@ -257,6 +260,32 @@ aira scan . --output json --submit-research-aggregate \
 Hosted and CLI Supabase submissions recompute FTI-v1 from `checks_json` on write, persist only aggregate facts, and treat the submission stream as append-only. Duplicate submissions are coalesced by `submission_fingerprint`.
 
 For the hosted web app, keep `AIRA_ALLOW_PUBLIC_RESEARCH_SUBMISSIONS=false` unless you explicitly want public web traffic writing into the curated dataset.
+
+### Curated public-repo collection
+
+If you want the canonical dataset to come from public repos rather than public web users, use the collector:
+
+```bash
+aira collect ./docs/examples/public-collection.yaml --submit-research-aggregate
+```
+
+The collector:
+
+- reads a YAML or JSON sampling manifest
+- shallow-clones each public repo
+- optionally checks out a specified ref
+- runs AIRA locally
+- submits aggregate-only results with schema v2 sample metadata
+- upserts `aira_sample_manifests` rows when the backend is Supabase
+
+Useful flags:
+
+- `--output json`
+- `--out-file collection.json`
+- `--keep-repos`
+- `--checkout-root /tmp/aira-collect`
+
+See [docs/PUBLIC_DATA_COLLECTION.md](../docs/PUBLIC_DATA_COLLECTION.md) and [docs/examples/public-collection.yaml](../docs/examples/public-collection.yaml).
 
 ### FTI-v1
 

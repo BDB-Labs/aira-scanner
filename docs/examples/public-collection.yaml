@@ -1,0 +1,29 @@
+sampling_method: curated_public_repos
+sampling_frame: github-public-repos-2026-q1
+inclusion_criteria:
+  public_repo: true
+  language_in:
+    - python
+    - javascript
+    - typescript
+exclusion_criteria:
+  archived: true
+  generated_only_repo: true
+attribution_policy: manual-researcher-classification-v1
+random_seed: 2026-q1
+notes: Curated public repo sample for internal AIRA benchmarking.
+
+defaults:
+  attribution_class: unknown
+  source_kind: repo
+  scanner_version: 1.2.0
+  ruleset_version: 1.2.0
+  scoring_version: fti-v1
+
+samples:
+  - repo: openai/openai-python
+    ref: main
+    attribution_class: unknown
+  - repo: pallets/flask
+    ref: main
+    attribution_class: human_baseline

@@ -93,6 +93,7 @@ For readers who need more than the landing-page overview:
 - [docs/EVOLUTION.md](./docs/EVOLUTION.md) explains how the scanner evolved from the original web prototype to the current research tool
 - [docs/METHODOLOGY.md](./docs/METHODOLOGY.md) defines what AIRA measures, how the scan modes work, and what claims the tool should not make
 - [docs/AIRA_CHECKS.md](./docs/AIRA_CHECKS.md) documents the 15 checks in practical terms
+- [docs/PUBLIC_DATA_COLLECTION.md](./docs/PUBLIC_DATA_COLLECTION.md) documents curated public-repo collection for canonical research datasets
 - [CLI/README.md](./CLI/README.md) documents the local and CI scanner surface
 - [SUPABASE_SCHEMA.sql](./SUPABASE_SCHEMA.sql), [SUPABASE_MIGRATION_V2.sql](./SUPABASE_MIGRATION_V2.sql), and [AIRTABLE_SCHEMA.md](./AIRTABLE_SCHEMA.md) document the current research sink contracts
 
@@ -268,6 +269,16 @@ The submission contract remains aggregate-only:
 - snippets are not sent
 - raw file contents are not sent
 - child rows contain only check-level aggregate facts
+
+### Curated public data collection
+
+For canonical datasets built from public repos, use the manifest-driven collector instead of the public website:
+
+```bash
+aira collect ./docs/examples/public-collection.yaml --submit-research-aggregate
+```
+
+That flow shallow-clones public repos, scans them locally, and submits aggregate-only results plus `aira_sample_manifests` metadata from a documented sampling manifest. See [docs/PUBLIC_DATA_COLLECTION.md](./docs/PUBLIC_DATA_COLLECTION.md).
 
 ---
 

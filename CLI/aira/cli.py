@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from aira.llm import LLMConfig, LLMRoutingError, provider_health_snapshot
+from aira.collector import collect_public_repos
 from aira.research import ResearchSubmissionError, check_research_connection, submit_aggregate_research
 from aira.scanner import AIRAScanner, result_to_json, result_to_yaml
 
@@ -220,6 +221,31 @@ def print_providers() -> None:
     print()
 
 
+def print_collection_summary(summary: dict) -> None:
+    print(f"{C.BOLD}  PUBLIC DATA COLLECTION{C.RESET}")
+    print(f"{'─'*55}")
+    print(f"  Sampling method: {summary.get('sampling_method', 'n/a')}")
+    print(f"  Sampling frame:  {summary.get('sampling_frame', 'n/a')}")
+    print(f"  Submitted:       {'yes' if summary.get('submitted') else 'no'}")
+    print()
+    for sample in summary.get("samples", []):
+        status = f"{C.GREEN}ok{C.RESET}" if not sample.get("error") else f"{C.RED}error{C.RESET}"
+        duplicate = " duplicate" if sample.get("duplicate") else ""
+        print(f"  {status}  {sample.get('sample_name')} @ {sample.get('sample_version')}{duplicate}")
+        print(f"    repo:          {sample.get('repo')}")
+        if sample.get("commit_sha"):
+            print(f"    commit:        {sample.get('commit_sha')}")
+        print(f"    findings:      {sample.get('findings_total', 0)}")
+        print(f"    checks_failed: {sample.get('checks_failed', 0)}")
+        if sample.get("research_submission_id"):
+            print(f"    submission_id: {sample.get('research_submission_id')}")
+        if sample.get("manifest_written"):
+            print("    manifest:      written")
+        if sample.get("error"):
+            print(f"    error:         {sample.get('error')}")
+    print()
+
+
 def print_research_submission_status(response: dict) -> None:
     print(f"{C.BOLD}  RESEARCH SUBMISSION{C.RESET}")
     print(f"{'─'*55}")
@@ -323,6 +349,17 @@ def build_parser() -> argparse.ArgumentParser:
     providers_parser = subparsers.add_parser("providers", help="List supported providers and env vars")
     providers_parser.add_argument("--json", action="store_true", help="Emit provider health snapshot as JSON")
     add_llm_arguments(providers_parser)
+
+    collect_parser = subparsers.add_parser("collect", help="Collect curated public repository samples")
+    collect_parser.add_argument("manifest", help="Path to YAML/JSON collection manifest")
+    collect_parser.add_argument("--output", "-o", choices=["terminal", "json"], default="terminal", help="Output format")
+    collect_parser.add_argument("--out-file", "-f", help="Write collection summary to file instead of stdout", default=None)
+    collect_parser.add_argument("--exclude", "-e", help="Comma-separated list of directories to exclude", default="")
+    collect_parser.add_argument("--submit-research-aggregate", action="store_true", help="Submit collected aggregate results to the configured research backend")
+    collect_parser.add_argument("--research-timeout", type=int, default=15, help="HTTP timeout for research backend submission")
+    collect_parser.add_argument("--keep-repos", action="store_true", help="Keep cloned repos on disk after collection")
+    collect_parser.add_argument("--checkout-root", help="Directory where repos should be cloned")
+    add_llm_arguments(collect_parser)
     return parser
 
 
@@ -419,6 +456,37 @@ def main() -> None:
         else:
             print_providers()
         sys.exit(0)
+
+    if args.command == "collect":
+        llm_config = build_llm_config(args)
+        exclude = [item.strip() for item in args.exclude.split(",") if item.strip()]
+        try:
+            summary = collect_public_repos(
+                args.manifest,
+                engine=args.engine,
+                llm_config=llm_config,
+                exclude_dirs=exclude,
+                submit_research_aggregate_flag=args.submit_research_aggregate,
+                timeout_seconds=args.research_timeout,
+                keep_repos=args.keep_repos,
+                checkout_root=args.checkout_root,
+            )
+        except (ValueError, ResearchSubmissionError, LLMRoutingError) as exc:
+            print(f"{C.RED}Collection failed: {exc}{C.RESET}", file=sys.stderr)
+            sys.exit(2)
+
+        output = json.dumps(summary, indent=2) if args.output == "json" else None
+        if args.output == "json":
+            if args.out_file:
+                Path(args.out_file).write_text(output, encoding="utf-8")
+            else:
+                print(output)
+        else:
+            print_banner()
+            print_collection_summary(summary)
+            if args.out_file:
+                Path(args.out_file).write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        sys.exit(0 if summary.get("ok") else 2)
 
     parser.print_help()
 
