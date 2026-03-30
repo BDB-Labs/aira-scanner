@@ -11,10 +11,13 @@ from urllib import error
 from aira.cli import main
 from aira.research import (
     build_aggregate_submission_fields,
+    build_submission_bundle,
     build_structured_submission_record,
     check_airtable_connection,
     check_research_connection,
+    compute_fti_v1,
     infer_research_backend,
+    risk_level_for_fti,
     submit_aggregate_research,
 )
 from aira.scanner import ScanResult
@@ -205,6 +208,9 @@ class ResearchHelpersTests(unittest.TestCase):
         payload = json.loads(lines[0])
         self.assertEqual(payload["source"], "aira-cli")
         self.assertEqual(payload["check_severity_json"]["C03"]["HIGH"], 1)
+        self.assertEqual(payload["scoring_version"], "fti-v1")
+        self.assertEqual(payload["risk_level"], "MODERATE_RISK")
+        self.assertEqual(len(payload["submission_checks"]), 15)
 
     def test_submit_aggregate_research_can_use_supabase_backend(self):
         with mock.patch.dict(
@@ -216,20 +222,97 @@ class ResearchHelpersTests(unittest.TestCase):
             },
             clear=True,
         ):
-            with mock.patch("aira.research._supabase_request_json", return_value=[{"id": "row123"}]) as request_mock:
-                response = submit_aggregate_research(_sample_result())
+            with mock.patch(
+                "aira.research._supabase_request_json",
+                side_effect=[
+                    [],
+                    [],
+                    [{"id": "row123"}],
+                    [],
+                ],
+            ) as request_mock:
+                response = submit_aggregate_research(
+                    _sample_result(),
+                    submission_options={
+                        "sample_name": "benchmarks/repo-a",
+                        "sample_version": "2026-03",
+                        "attribution_class": "suspected_ai",
+                    },
+                )
 
         self.assertEqual(response["backend"], "supabase")
         self.assertEqual(response["id"], "row123")
-        request_mock.assert_called_once()
+        self.assertEqual(request_mock.call_count, 4)
 
-    def test_structured_submission_record_contains_json_shapes(self):
-        record = build_structured_submission_record(_sample_result(), source="github:test/repo")
+    def test_structured_submission_record_contains_v2_fields(self):
+        record = build_structured_submission_record(
+            _sample_result(),
+            source="github:test/repo",
+            submission_options={
+                "sample_name": "github:test/repo",
+                "sample_version": "v2",
+                "attribution_class": "suspected_ai",
+            },
+        )
 
         self.assertEqual(record["source"], "github:test/repo")
         self.assertEqual(record["checks_json"]["success_integrity"], "FAIL")
         self.assertEqual(record["check_count_json"]["C03"], 2)
         self.assertEqual(record["check_severity_json"]["C03"]["MEDIUM"], 1)
+        self.assertEqual(record["sample_name"], "github:test/repo")
+        self.assertEqual(record["sample_version"], "v2")
+        self.assertEqual(record["attribution_class"], "suspected_ai")
+        self.assertEqual(record["fti_score"], 71.43)
+        self.assertEqual(record["risk_level"], "MODERATE_RISK")
+        self.assertEqual(record["scoring_version"], "fti-v1")
+        self.assertEqual(len(record["submission_fingerprint"]), 64)
+        self.assertEqual(len(record["record_sha256"]), 64)
+
+    def test_fti_v1_scoring_and_risk_mapping_are_stable(self):
+        bundle = build_submission_bundle(
+            _sample_result(),
+            source="github:test/repo",
+            submission_options={
+                "sample_name": "github:test/repo",
+                "attribution_class": "suspected_ai",
+            },
+        )
+
+        self.assertEqual(compute_fti_v1(bundle["submission_checks"]), 71.43)
+        self.assertEqual(risk_level_for_fti(85.0), "LOW_RISK")
+        self.assertEqual(risk_level_for_fti(84.99), "MODERATE_RISK")
+        self.assertEqual(risk_level_for_fti(64.99), "HIGH_RISK")
+        self.assertEqual(risk_level_for_fti(39.99), "CRITICAL_RISK")
+
+    def test_supabase_submission_returns_duplicate_when_fingerprint_exists(self):
+        existing = {"id": "row123", "submission_fingerprint": "abc", "record_sha256": "def"}
+        with mock.patch.dict(
+            os.environ,
+            {
+                "SUPABASE_URL": "https://example.supabase.co",
+                "SUPABASE_SERVICE_ROLE_KEY": "secret",
+                "SUPABASE_TABLE": "aira_submissions",
+            },
+            clear=True,
+        ):
+            with mock.patch(
+                "aira.research._supabase_request_json",
+                side_effect=[
+                    [existing],
+                    [],
+                ],
+            ) as request_mock:
+                response = submit_aggregate_research(
+                    _sample_result(),
+                    submission_options={
+                        "sample_name": "benchmarks/repo-a",
+                        "attribution_class": "suspected_ai",
+                    },
+                )
+
+        self.assertTrue(response["duplicate"])
+        self.assertEqual(response["id"], "row123")
+        self.assertEqual(request_mock.call_count, 2)
 
     def test_scan_command_can_submit_aggregate_research(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -94,7 +94,7 @@ For readers who need more than the landing-page overview:
 - [docs/METHODOLOGY.md](./docs/METHODOLOGY.md) defines what AIRA measures, how the scan modes work, and what claims the tool should not make
 - [docs/AIRA_CHECKS.md](./docs/AIRA_CHECKS.md) documents the 15 checks in practical terms
 - [CLI/README.md](./CLI/README.md) documents the local and CI scanner surface
-- [SUPABASE_SCHEMA.sql](./SUPABASE_SCHEMA.sql) and [AIRTABLE_SCHEMA.md](./AIRTABLE_SCHEMA.md) document the current research sink contracts
+- [SUPABASE_SCHEMA.sql](./SUPABASE_SCHEMA.sql), [SUPABASE_MIGRATION_V2.sql](./SUPABASE_MIGRATION_V2.sql), and [AIRTABLE_SCHEMA.md](./AIRTABLE_SCHEMA.md) document the current research sink contracts
 
 ---
 
@@ -162,6 +162,7 @@ curl https://your-domain.example/api/supabase-health
 The recommended research storage layouts are documented in:
 
 - [SUPABASE_SCHEMA.sql](./SUPABASE_SCHEMA.sql)
+- [SUPABASE_MIGRATION_V2.sql](./SUPABASE_MIGRATION_V2.sql)
 - [AIRTABLE_SCHEMA.md](./AIRTABLE_SCHEMA.md)
 
 To probe the deterministic static scan route directly:
@@ -181,6 +182,7 @@ RESEARCH_BACKEND=supabase
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
 SUPABASE_TABLE=aira_submissions
+SUPABASE_CHECKS_TABLE=aira_submission_checks
 ```
 
 And use JSONL for local/CI collection:
@@ -188,6 +190,81 @@ And use JSONL for local/CI collection:
 ```bash
 AIRA_RESEARCH_JSONL=/absolute/path/to/aira-research.jsonl
 ```
+
+### Supabase schema v2
+
+Schema v2 keeps `public.aira_submissions` as the primary append-only stream and adds:
+
+- sample stream identity: `sample_name`, `sample_version`
+- attribution metadata: `attribution_class`, `source_id`, `source_kind`
+- scoring metadata: `scanner_name`, `scanner_version`, `ruleset_version`, `scoring_version`
+- derived trust metrics: `fti_score`, `risk_level`
+- integrity fields: `submission_fingerprint`, `record_sha256`, `parent_record_sha256`
+- normalized child rows in `public.aira_submission_checks`
+- reproducibility manifests in `public.aira_sample_manifests`
+
+For existing Supabase deployments, run [SUPABASE_MIGRATION_V2.sql](./SUPABASE_MIGRATION_V2.sql). New deployments can apply [SUPABASE_SCHEMA.sql](./SUPABASE_SCHEMA.sql) directly.
+
+`sample_name`, `sample_version`, and `attribution_class` are the core caller-owned schema v2 inputs. `sample_version` defaults to `v1`, and `attribution_class` must be one of:
+
+- `explicit_ai`
+- `suspected_ai`
+- `human_baseline`
+- `unknown`
+
+If `sample_name` is omitted, AIRA falls back to a conservative derived name so hosted web submissions do not break, but curated studies should set it explicitly to preserve lineage across repeated scans of the same sample stream.
+
+### FTI-v1
+
+Every Supabase submission is rescored server-side from `checks_json` using the stable FTI-v1 weights:
+
+- `success_integrity=3`
+- `audit_integrity=3`
+- `exception_handling=3`
+- `confidence_representation=3`
+- `fallback_control=2`
+- `bypass_controls=2`
+- `return_contracts=2`
+- `determinism=2`
+- `idempotency_safety=2`
+- `logic_consistency=1`
+- `background_tasks=1`
+- `environment_safety=1`
+- `startup_integrity=1`
+- `lineage=1`
+- `test_coverage_symmetry=1`
+
+Formula:
+
+- `FAIL` contributes full weight
+- `PASS` contributes `0`
+- `UNKNOWN` contributes `0`
+- `FTI = 100 - ((sum failed weights / sum all weights) * 100)`
+- rounded to two decimals
+
+Risk mapping:
+
+- `>= 85.00` → `LOW_RISK`
+- `>= 65.00 and < 85.00` → `MODERATE_RISK`
+- `>= 40.00 and < 65.00` → `HIGH_RISK`
+- `< 40.00` → `CRITICAL_RISK`
+
+### Submission guarantees
+
+Supabase schema v2 is intentionally append-only.
+
+- prior submissions are not mutated by normal application flows
+- duplicate submissions are coalesced by `submission_fingerprint`
+- `record_sha256` is computed from the canonical persisted payload
+- `parent_record_sha256` links each record to the most recent prior record in the same sample stream
+- normalized `aira_submission_checks` rows are derived from aggregate-only counts, severities, weights, and statuses
+
+The submission contract remains aggregate-only:
+
+- source code is not sent
+- snippets are not sent
+- raw file contents are not sent
+- child rows contain only check-level aggregate facts
 
 ---
 

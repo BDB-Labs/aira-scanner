@@ -61,7 +61,10 @@ aira scan ./my-project --exclude node_modules,dist,build
 aira scan ./my-project --fail-on medium
 
 # Submit aggregate-only results to the configured research backend
-aira scan ./my-project --output json --submit-research-aggregate
+aira scan ./my-project --output json --submit-research-aggregate \
+  --sample-name github:my-org/my-project \
+  --sample-version 2026-03 \
+  --attribution-class suspected_ai
 
 # Verify research backend connectivity without writing a record
 aira health --check-research
@@ -149,6 +152,16 @@ export RESEARCH_BACKEND="supabase"
 export SUPABASE_URL="https://your-project.supabase.co"
 export SUPABASE_SERVICE_ROLE_KEY="..."
 export SUPABASE_TABLE="aira_submissions"
+export SUPABASE_CHECKS_TABLE="aira_submission_checks"
+
+# Recommended schema v2 research metadata
+export AIRA_SAMPLE_NAME="github:my-org/my-project"
+export AIRA_SAMPLE_VERSION="2026-03"
+export AIRA_ATTRIBUTION_CLASS="suspected_ai"
+export AIRA_SOURCE_ID="my-org/my-project"
+export AIRA_SOURCE_KIND="repo"
+export AIRA_SCANNER_VERSION="1.2.0"
+export AIRA_RULESET_VERSION="1.2.0"
 
 # Local/CI backend: newline-delimited JSON
 export AIRA_RESEARCH_JSONL="/absolute/path/to/aira-research.jsonl"
@@ -164,7 +177,10 @@ export AIRTABLE_TOKEN="pat..."
 The CLI can submit **aggregate-only** study data to the configured research backend:
 
 ```bash
-aira scan . --output json --submit-research-aggregate
+aira scan . --output json --submit-research-aggregate \
+  --sample-name github:my-org/my-project \
+  --sample-version 2026-03 \
+  --attribution-class suspected_ai
 ```
 
 What is sent:
@@ -177,6 +193,8 @@ What is sent:
 - per-check severity matrices
 - scan mode / provider / model metadata
 - CI metadata when available
+- schema v2 lineage fields such as `submission_fingerprint` and `record_sha256`
+- normalized per-check rows for `aira_submission_checks`
 
 What is **not** sent:
 
@@ -213,7 +231,64 @@ If one of those optional fields does not exist in Airtable yet, the CLI drops it
 The recommended storage layouts are documented in:
 
 - [SUPABASE_SCHEMA.sql](../SUPABASE_SCHEMA.sql)
+- [SUPABASE_MIGRATION_V2.sql](../SUPABASE_MIGRATION_V2.sql)
 - [AIRTABLE_SCHEMA.md](../AIRTABLE_SCHEMA.md)
+
+### Supabase schema v2 requirements
+
+For curated Supabase submissions, provide or preconfigure:
+
+- `sample_name`: stable stream identifier for the code sample or repo under study
+- `sample_version`: stream version label; defaults to `v1`
+- `attribution_class`: one of `explicit_ai`, `suspected_ai`, `human_baseline`, `unknown`
+
+Recommended CLI flags:
+
+```bash
+aira scan . --output json --submit-research-aggregate \
+  --sample-name github:my-org/my-project \
+  --sample-version 2026-03 \
+  --attribution-class suspected_ai \
+  --source-id my-org/my-project \
+  --source-kind repo
+```
+
+Hosted and CLI Supabase submissions recompute FTI-v1 from `checks_json` on write, persist only aggregate facts, and treat the submission stream as append-only. Duplicate submissions are coalesced by `submission_fingerprint`.
+
+### FTI-v1
+
+FTI-v1 uses the following stable weights:
+
+- `success_integrity=3`
+- `audit_integrity=3`
+- `exception_handling=3`
+- `confidence_representation=3`
+- `fallback_control=2`
+- `bypass_controls=2`
+- `return_contracts=2`
+- `determinism=2`
+- `idempotency_safety=2`
+- `logic_consistency=1`
+- `background_tasks=1`
+- `environment_safety=1`
+- `startup_integrity=1`
+- `lineage=1`
+- `test_coverage_symmetry=1`
+
+Formula:
+
+- `FAIL` contributes full weight
+- `PASS` contributes `0`
+- `UNKNOWN` contributes `0`
+- `FTI = 100 - ((sum failed weights / sum all weights) * 100)`
+- rounded to two decimals
+
+Risk mapping:
+
+- `>= 85.00` → `LOW_RISK`
+- `>= 65.00 and < 85.00` → `MODERATE_RISK`
+- `>= 40.00 and < 65.00` → `HIGH_RISK`
+- `< 40.00` → `CRITICAL_RISK`
 
 ---
 

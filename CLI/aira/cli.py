@@ -272,6 +272,21 @@ def add_research_arguments(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--research-source", help="Override the source label used for research submission")
     parser.add_argument("--research-timeout", type=int, default=15, help="HTTP timeout for research backend submission")
+    parser.add_argument("--sample-name", help="Stable sample stream name for research schema v2 submissions")
+    parser.add_argument("--sample-version", default=None, help="Sample version label for research schema v2 submissions")
+    parser.add_argument(
+        "--attribution-class",
+        choices=["explicit_ai", "suspected_ai", "human_baseline", "unknown"],
+        default=None,
+        help="Attribution class for research schema v2 submissions",
+    )
+    parser.add_argument("--source-id", help="Stable source identifier for research schema v2 submissions")
+    parser.add_argument(
+        "--source-kind",
+        choices=["repo", "directory", "dataset_file", "dataset_repo", "ci_run", "manual"],
+        default=None,
+        help="Source kind for research schema v2 submissions",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -338,6 +353,13 @@ def main() -> None:
                     result,
                     source=args.research_source,
                     timeout_seconds=args.research_timeout,
+                    submission_options={
+                        "sample_name": args.sample_name,
+                        "sample_version": args.sample_version,
+                        "attribution_class": args.attribution_class,
+                        "source_id": args.source_id,
+                        "source_kind": args.source_kind,
+                    },
                 )
             except ResearchSubmissionError as exc:
                 print_research_submission_error(str(exc))

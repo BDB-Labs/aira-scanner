@@ -190,6 +190,8 @@ Preferred backends:
 
 Airtable remains supported only as a compatibility fallback.
 
+For Supabase schema v2, AIRA treats the submission stream as append-only and derives a normalized per-check table from the aggregate payload. The server recomputes FTI-v1 and risk bands from `checks_json` rather than trusting caller-supplied scores.
+
 ## 11. Claims AIRA Should Not Make
 
 AIRA should not be used to claim:
