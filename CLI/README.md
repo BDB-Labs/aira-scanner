@@ -149,6 +149,7 @@ export GROQ_MODEL="your-provider-model-id"
 
 # Preferred hosted backend: Supabase
 export RESEARCH_BACKEND="supabase"
+export AIRA_ALLOW_PUBLIC_RESEARCH_SUBMISSIONS="false"
 export SUPABASE_URL="https://your-project.supabase.co"
 export SUPABASE_SERVICE_ROLE_KEY="..."
 export SUPABASE_TABLE="aira_submissions"
@@ -254,6 +255,8 @@ aira scan . --output json --submit-research-aggregate \
 ```
 
 Hosted and CLI Supabase submissions recompute FTI-v1 from `checks_json` on write, persist only aggregate facts, and treat the submission stream as append-only. Duplicate submissions are coalesced by `submission_fingerprint`.
+
+For the hosted web app, keep `AIRA_ALLOW_PUBLIC_RESEARCH_SUBMISSIONS=false` unless you explicitly want public web traffic writing into the curated dataset.
 
 ### FTI-v1
 

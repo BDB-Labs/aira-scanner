@@ -1,4 +1,4 @@
-import { submitResearchRecord } from '../lib/research-store.js';
+import { publicResearchSubmissionEnabled, submitResearchRecord } from '../lib/research-store.js';
 
 export const config = {
   api: {
@@ -7,6 +7,7 @@ export const config = {
 };
 
 export default async function handler(req, res) {
+  const publicSubmissionEnabled = publicResearchSubmissionEnabled(process.env);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -17,6 +18,16 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: { message: 'Method not allowed' } });
+  }
+
+  if (!publicSubmissionEnabled) {
+    return res.status(403).json({
+      error: {
+        message:
+          'Public research submission is disabled. Canonical research records are reserved for internal curated CLI/CI workflows.',
+      },
+      publicSubmissionEnabled: false,
+    });
   }
 
   try {

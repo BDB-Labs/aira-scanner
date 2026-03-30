@@ -115,6 +115,7 @@ The scanner currently supports:
 * preferred hosted backend: Supabase
 * local/CI backend: JSONL append sink
 * Airtable remains available only as a legacy compatibility fallback
+* public web research submission is disabled by default; canonical records are intended for internal curated workflows
 * CLI/CI aggregate-only submission with `aira scan --submit-research-aggregate`
 * read-only CLI backend verification with `aira health --check-research`
 * direct web backend verification with `/api/research-health` or `/api/supabase-health`
@@ -179,6 +180,7 @@ If you want to get away from Airtable, use Supabase for the hosted scanner:
 
 ```bash
 RESEARCH_BACKEND=supabase
+AIRA_ALLOW_PUBLIC_RESEARCH_SUBMISSIONS=false
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
 SUPABASE_TABLE=aira_submissions
@@ -258,6 +260,7 @@ Supabase schema v2 is intentionally append-only.
 - `record_sha256` is computed from the canonical persisted payload
 - `parent_record_sha256` links each record to the most recent prior record in the same sample stream
 - normalized `aira_submission_checks` rows are derived from aggregate-only counts, severities, weights, and statuses
+- public web writes should remain disabled unless you intentionally want public traffic entering the curated study pipeline
 
 The submission contract remains aggregate-only:
 
