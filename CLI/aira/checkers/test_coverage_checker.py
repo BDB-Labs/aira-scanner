@@ -4,10 +4,11 @@ Analyzes test files to measure happy-path vs failure-path coverage ratio.
 Works for both Python and JavaScript/TypeScript test files.
 """
 
+import os
 import re
 from pathlib import Path
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import Callable, List, Optional, Tuple
 
 
 @dataclass
@@ -108,18 +109,35 @@ def analyze_test_file(filepath: str) -> TestCoverageReport:
     )
 
 
-def scan_test_files(root: str) -> Tuple[List[TestCoverageReport], List[dict]]:
+def scan_test_files(root: str, *, is_excluded: Optional[Callable[[Path], bool]] = None) -> Tuple[List[TestCoverageReport], List[dict]]:
     """Scan all test files under root and return reports + findings."""
     reports = []
     all_findings = []
 
-    for path in Path(root).rglob("*"):
-        if path.is_file() and is_test_file(str(path)):
+    root_path = Path(root)
+    if root_path.is_file():
+        if not (is_excluded and is_excluded(root_path)) and is_test_file(str(root_path)):
             try:
-                report = analyze_test_file(str(path))
+                report = analyze_test_file(str(root_path))
                 reports.append(report)
                 all_findings.extend(report.flagged_findings)
             except Exception:
                 pass
+        return reports, all_findings
+
+    for dirpath, dirnames, filenames in os.walk(root_path):
+        current_dir = Path(dirpath)
+        dirnames[:] = [name for name in dirnames if not (is_excluded and is_excluded(current_dir / name))]
+        for filename in filenames:
+            path = current_dir / filename
+            if is_excluded and is_excluded(path):
+                continue
+            if path.is_file() and is_test_file(str(path)):
+                try:
+                    report = analyze_test_file(str(path))
+                    reports.append(report)
+                    all_findings.extend(report.flagged_findings)
+                except Exception:
+                    pass
 
     return reports, all_findings

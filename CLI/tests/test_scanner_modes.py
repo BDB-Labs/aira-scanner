@@ -9,6 +9,48 @@ from aira.scanner import AIRAScanner
 
 
 class ScannerModeTests(unittest.TestCase):
+    def test_static_scan_respects_file_exclude_pattern(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            included = root / "keep.py"
+            excluded = root / "skip.py"
+            source = (
+                "def save_record(db, record):\n"
+                "    try:\n"
+                "        db.insert(record)\n"
+                "        return True\n"
+                "    except Exception:\n"
+                "        return True\n"
+            )
+            included.write_text(source, encoding="utf-8")
+            excluded.write_text(source, encoding="utf-8")
+
+            scanner = AIRAScanner(str(root), exclude_dirs=["skip.py"])
+            result = scanner.scan(mode="static")
+
+        self.assertEqual(result.files_scanned, 1)
+        self.assertTrue(all(finding["file"] != "skip.py" for finding in result.findings))
+        self.assertTrue(any(finding["file"] == "keep.py" for finding in result.findings))
+
+    def test_test_coverage_scan_respects_excluded_test_files(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            included = root / "test_keep.py"
+            excluded = root / "test_skip.py"
+            test_source = (
+                "def test_happy_path():\n"
+                "    assert True\n"
+            )
+            included.write_text(test_source, encoding="utf-8")
+            excluded.write_text(test_source, encoding="utf-8")
+
+            scanner = AIRAScanner(str(root), exclude_dirs=["test_skip.py"])
+            result = scanner.scan(mode="static")
+
+        coverage_findings = [finding for finding in result.findings if finding["check_id"] == "C14"]
+        self.assertEqual(len(coverage_findings), 1)
+        self.assertEqual(Path(coverage_findings[0]["file"]).resolve(), included.resolve())
+
     def test_hybrid_falls_back_to_static_when_llm_unavailable(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             target = Path(tmpdir) / "sample.py"

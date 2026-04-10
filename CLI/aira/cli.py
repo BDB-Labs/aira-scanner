@@ -322,7 +322,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan_parser = subparsers.add_parser("scan", help="Scan a file or directory")
     scan_parser.add_argument("target", help="File or directory to scan")
     scan_parser.add_argument("--output", "-o", choices=["terminal", "yaml", "json"], default="terminal", help="Output format")
-    scan_parser.add_argument("--exclude", "-e", help="Comma-separated list of directories to exclude", default="")
+    scan_parser.add_argument("--exclude", "-e", help="Comma-separated list of directories, files, or glob patterns to exclude", default="")
     scan_parser.add_argument("--out-file", "-f", help="Write output to file instead of stdout", default=None)
     scan_parser.add_argument(
         "--fail-on",
@@ -354,7 +354,7 @@ def build_parser() -> argparse.ArgumentParser:
     collect_parser.add_argument("manifest", help="Path to YAML/JSON collection manifest")
     collect_parser.add_argument("--output", "-o", choices=["terminal", "json"], default="terminal", help="Output format")
     collect_parser.add_argument("--out-file", "-f", help="Write collection summary to file instead of stdout", default=None)
-    collect_parser.add_argument("--exclude", "-e", help="Comma-separated list of directories to exclude", default="")
+    collect_parser.add_argument("--exclude", "-e", help="Comma-separated list of directories, files, or glob patterns to exclude", default="")
     collect_parser.add_argument("--submit-research-aggregate", action="store_true", help="Submit collected aggregate results to the configured research backend")
     collect_parser.add_argument("--research-timeout", type=int, default=15, help="HTTP timeout for research backend submission")
     collect_parser.add_argument("--keep-repos", action="store_true", help="Keep cloned repos on disk after collection")

@@ -9,6 +9,7 @@ Supports:
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import os
 import sys
@@ -187,7 +188,7 @@ def merge_scan_results(primary: ScanResult, secondary: ScanResult, mode: str) ->
 class AIRAScanner:
     def __init__(self, target: str, exclude_dirs: Optional[List[str]] = None):
         self.target = Path(target).resolve()
-        self.exclude_dirs = set(exclude_dirs or []) | SKIP_DIRS
+        self.exclude_patterns = tuple(item.strip() for item in (exclude_dirs or []) if item.strip())
 
     def scan(self, mode: str = "static", llm_config: Optional[LLMConfig] = None) -> ScanResult:
         if mode not in {"static", "llm", "hybrid"}:
@@ -217,16 +218,17 @@ class AIRAScanner:
         files_scanned = 0
 
         if self.target.is_file():
-            file_findings, scanned = self._scan_static_file(self.target)
-            findings.extend(file_findings)
-            files_scanned += scanned
+            if not self._is_excluded_path(self.target):
+                file_findings, scanned = self._scan_static_file(self.target)
+                findings.extend(file_findings)
+                files_scanned += scanned
         else:
             for filepath in self._iter_supported_files():
                 file_findings, scanned = self._scan_static_file(filepath)
                 findings.extend(file_findings)
                 files_scanned += scanned
 
-            _, test_findings = scan_test_files(str(self.target))
+            _, test_findings = scan_test_files(str(self.target), is_excluded=self._is_excluded_path)
             findings.extend(test_findings)
 
         failed_checks = {finding["check_id"] for finding in findings if str(finding.get("check_id", "")).startswith("C")}
@@ -281,12 +283,49 @@ class AIRAScanner:
             return filepath.name
         return str(filepath.relative_to(self.target))
 
+    def _relative_path(self, filepath: Path) -> str:
+        if self.target.is_file():
+            base = self.target.parent
+        else:
+            base = self.target
+        try:
+            return filepath.resolve().relative_to(base).as_posix()
+        except ValueError:
+            return filepath.name
+
+    def _matches_exclude_pattern(self, filepath: Path, pattern: str) -> bool:
+        normalized = pattern.strip().replace("\\", "/").rstrip("/")
+        if not normalized:
+            return False
+
+        relative_path = self._relative_path(filepath)
+        basename = filepath.name
+
+        if basename == normalized or relative_path == normalized:
+            return True
+        if fnmatch.fnmatchcase(basename, normalized) or fnmatch.fnmatchcase(relative_path, normalized):
+            return True
+        if "/" not in normalized and not any(ch in normalized for ch in "*?[]"):
+            return normalized in filepath.parts
+        if "/" in normalized and relative_path.endswith(f"/{normalized}"):
+            return True
+        return False
+
+    def _is_excluded_path(self, filepath: Path) -> bool:
+        for skip_dir in SKIP_DIRS:
+            if skip_dir in filepath.parts:
+                return True
+        return any(self._matches_exclude_pattern(filepath, pattern) for pattern in self.exclude_patterns)
+
     def _iter_supported_files(self) -> List[Path]:
         files: List[Path] = []
         for dirpath, dirnames, filenames in os.walk(self.target):
-            dirnames[:] = [name for name in dirnames if name not in self.exclude_dirs]
+            current_dir = Path(dirpath)
+            dirnames[:] = [name for name in dirnames if not self._is_excluded_path(current_dir / name)]
             for filename in filenames:
-                filepath = Path(dirpath) / filename
+                filepath = current_dir / filename
+                if self._is_excluded_path(filepath):
+                    continue
                 if filepath.suffix.lower() in SUPPORTED_EXTENSIONS:
                     files.append(filepath)
         return sorted(files)
