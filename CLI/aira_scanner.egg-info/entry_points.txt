@@ -1,0 +1,2 @@
+[console_scripts]
+aira = aira.cli:main

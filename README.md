@@ -94,7 +94,7 @@ For readers who need more than the landing-page overview:
 - [docs/METHODOLOGY.md](./docs/METHODOLOGY.md) defines what AIRA measures, how the scan modes work, and what claims the tool should not make
 - [docs/AIRA_CHECKS.md](./docs/AIRA_CHECKS.md) documents the 15 checks in practical terms
 - [docs/PUBLIC_DATA_COLLECTION.md](./docs/PUBLIC_DATA_COLLECTION.md) documents curated public-repo collection for canonical research datasets
-- [CLI/README.md](./CLI/README.md) documents the local and CI scanner surface
+- [CLI/README.md](./CLI/README.md) documents the local, CI, and Homebrew scanner surface
 - [SUPABASE_SCHEMA.sql](./SUPABASE_SCHEMA.sql), [SUPABASE_MIGRATION_V2.sql](./SUPABASE_MIGRATION_V2.sql), and [AIRTABLE_SCHEMA.md](./AIRTABLE_SCHEMA.md) document the current research sink contracts
 
 ---
