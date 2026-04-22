@@ -92,8 +92,7 @@ pip install aira-scanner
 ```
 
 ```bash
-brew tap BDB-Labs/aira-scanner https://github.com/BDB-Labs/aira-scanner
-brew install aira
+brew install BDB-Labs/aira-scanner/aira
 ```
 
 ## Documentation

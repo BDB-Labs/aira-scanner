@@ -4,6 +4,8 @@ All notable changes to AIRA Scanner will be documented here.
 
 ## [Unreleased]
 
+- Published a dedicated `homebrew-aira-scanner` tap so Homebrew can auto-tap on `brew install BDB-Labs/aira-scanner/aira`
+
 ## [v1.2.1] - 2026-04-21
 
 - Added a documentation pack for scanner history, methodology, and formal check definitions

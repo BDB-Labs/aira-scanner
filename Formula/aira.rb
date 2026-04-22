@@ -9,6 +9,7 @@ class Aira < Formula
   license "MIT"
   head "https://github.com/BDB-Labs/aira-scanner.git", branch: "main"
 
+  depends_on "libyaml"
   depends_on "python@3.13"
 
   resource "setuptools" do

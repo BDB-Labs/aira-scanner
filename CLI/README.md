@@ -24,20 +24,24 @@ AIRA implements 15 checks derived from empirical observation of these patterns a
 pip install aira-scanner
 ```
 
-### Homebrew Tap
+### Homebrew
 
 ```bash
-brew tap BDB-Labs/aira-scanner https://github.com/BDB-Labs/aira-scanner
+brew install BDB-Labs/aira-scanner/aira
+```
+
+Or tap once and use the short name:
+
+```bash
+brew tap BDB-Labs/aira-scanner
 brew install aira
 ```
 
 For the latest unreleased code:
 
 ```bash
-brew install --HEAD aira
+brew install --HEAD BDB-Labs/aira-scanner/aira
 ```
-
-Because this repository is not named `homebrew-*`, keep the explicit tap URL in the `brew tap` command above.
 
 **Requirements:** Python 3.9+, PyYAML
 
