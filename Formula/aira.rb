@@ -1,13 +1,25 @@
-class AiraScanner < Formula
+class Aira < Formula
   include Language::Python::Virtualenv
 
   desc "Static analysis for AI-generated code failure patterns"
   homepage "https://aira.bageltech.net"
+  url "https://github.com/BDB-Labs/aira-scanner/archive/c88961456c3fe545bd85f2b052d223d1fc122900.tar.gz"
+  version "1.2.1"
+  sha256 "18348ffa20a33cfcdf2c243eac87f72351a3b5926ef3290984621528cf9bcdae"
   license "MIT"
-  # Keep this tap head-only until the project publishes versioned release archives.
   head "https://github.com/BDB-Labs/aira-scanner.git", branch: "main"
 
   depends_on "python@3.13"
+
+  resource "setuptools" do
+    url "https://files.pythonhosted.org/packages/4f/db/cfac1baf10650ab4d1c111714410d2fbb77ac5a616db26775db562c8fab2/setuptools-82.0.1.tar.gz"
+    sha256 "7d872682c5d01cfde07da7bccc7b65469d3dca203318515ada1de5eda35efbf9"
+  end
+
+  resource "wheel" do
+    url "https://files.pythonhosted.org/packages/89/24/a2eb353a6edac9a0303977c4cb048134959dd2a51b48a269dfc9dde00c8a/wheel-0.46.3.tar.gz"
+    sha256 "e3e79874b07d776c40bd6033f8ddf76a7dad46a7b8aa1b2787a83083519a1803"
+  end
 
   resource "pyyaml" do
     url "https://files.pythonhosted.org/packages/05/8e/961c0007c59b8dd7729d542c61a4d537767a59645b82a0b521206e1e25c2/pyyaml-6.0.3.tar.gz"
@@ -16,7 +28,7 @@ class AiraScanner < Formula
 
   def install
     venv = virtualenv_create(libexec, "python3.13")
-    venv.pip_install resource("pyyaml")
+    venv.pip_install [resource("setuptools"), resource("wheel"), resource("pyyaml")]
 
     system libexec/"bin/python", "-m", "pip", "install",
            "--no-deps",
@@ -34,7 +46,7 @@ class AiraScanner < Formula
           pass
     PYTHON
 
-    output = shell_output("#{bin}/aira scan #{testpath} --output json")
+    output = shell_output("#{bin}/aira scan #{testpath}/sample.py --output json --fail-on none")
     assert_match "\"check_id\": \"C03\"", output
   end
 end

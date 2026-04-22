@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aira-scanner"
-version = "1.2.0"
+version = "1.2.1"
 description = "AIRA — AI-Induced Risk Audit: Static analysis for AI-generated code failure patterns"
 readme = "README.md"
 license = {text = "MIT"}
@@ -37,8 +37,8 @@ aira = "aira.cli:main"
 
 [project.urls]
 Homepage = "https://bageltech.net"
-Repository = "https://github.com/bageltech/aira-scanner"
-"Bug Tracker" = "https://github.com/bageltech/aira-scanner/issues"
+Repository = "https://github.com/BDB-Labs/aira-scanner"
+"Bug Tracker" = "https://github.com/BDB-Labs/aira-scanner/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

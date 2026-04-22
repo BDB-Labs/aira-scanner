@@ -149,12 +149,12 @@ set
     end
   ),
   scanner_name = coalesce(nullif(scanner_name, ''), 'aira'),
-  scanner_version = coalesce(nullif(scanner_version, ''), nullif(metadata_json ->> 'scanner_version', ''), '1.2.0'),
+  scanner_version = coalesce(nullif(scanner_version, ''), nullif(metadata_json ->> 'scanner_version', ''), '1.2.1'),
   ruleset_version = coalesce(
     nullif(ruleset_version, ''),
     nullif(metadata_json ->> 'ruleset_version', ''),
     nullif(metadata_json ->> 'scanner_version', ''),
-    '1.2.0'
+    '1.2.1'
   ),
   scoring_version = coalesce(nullif(scoring_version, ''), 'fti-v1');
 

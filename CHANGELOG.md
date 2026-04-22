@@ -4,11 +4,17 @@ All notable changes to AIRA Scanner will be documented here.
 
 ## [Unreleased]
 
+## [v1.2.1] - 2026-04-21
+
 - Added a documentation pack for scanner history, methodology, and formal check definitions
 - Linked the new docs from the repository front door so the scanner's evolution is easier to reconstruct
 - Added Supabase research schema v2 with append-only submission streams, normalized submission checks, and FTI-v1 scoring
 - Disabled hosted public research writes by default so canonical records stay in internal curated CLI/CI workflows
 - Added a manifest-driven `aira collect` workflow for curated public-repo dataset collection
+- Switched the Homebrew formula from head-only installs to a stable immutable source archive, while keeping `--HEAD` available for unreleased builds
+- Vendored `setuptools` and `wheel` in the Homebrew formula so current Python virtualenv installs can build the CLI package reliably
+- Renamed the Homebrew formula from `aira-scanner` to `aira`, enabling `brew install aira` after the tap is installed
+- Added a helper script to refresh the Homebrew formula for future release refs
 
 ## [v1.2.0] - 2026-03-29
 

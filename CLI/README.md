@@ -1,6 +1,6 @@
 # AIRA Scanner — AI-Induced Risk Audit
 
-**Version 1.2.0**  
+**Version 1.2.1**  
 *Bagelle Parris Vargas Consulting | bageltech.net*  
 *Jurisprudential AI Governance Initiative*
 
@@ -28,11 +28,16 @@ pip install aira-scanner
 
 ```bash
 brew tap BDB-Labs/aira-scanner https://github.com/BDB-Labs/aira-scanner
-brew install --HEAD BDB-Labs/aira-scanner/aira-scanner
+brew install aira
 ```
 
-The Homebrew formula currently installs the latest `main` branch from this repository.
-Because this repository is not named `homebrew-*`, keep the explicit tap URL in the command above.
+For the latest unreleased code:
+
+```bash
+brew install --HEAD aira
+```
+
+Because this repository is not named `homebrew-*`, keep the explicit tap URL in the `brew tap` command above.
 
 **Requirements:** Python 3.9+, PyYAML
 
@@ -174,8 +179,8 @@ export AIRA_SAMPLE_VERSION="2026-03"
 export AIRA_ATTRIBUTION_CLASS="suspected_ai"
 export AIRA_SOURCE_ID="my-org/my-project"
 export AIRA_SOURCE_KIND="repo"
-export AIRA_SCANNER_VERSION="1.2.0"
-export AIRA_RULESET_VERSION="1.2.0"
+export AIRA_SCANNER_VERSION="1.2.1"
+export AIRA_RULESET_VERSION="1.2.1"
 
 # Local/CI backend: newline-delimited JSON
 export AIRA_RESEARCH_JSONL="/absolute/path/to/aira-research.jsonl"

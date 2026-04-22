@@ -1,12 +1,12 @@
 Metadata-Version: 2.4
 Name: aira-scanner
-Version: 1.2.0
+Version: 1.2.1
 Summary: AIRA — AI-Induced Risk Audit: Static analysis for AI-generated code failure patterns
 Author-email: "William M. Parris" <bill@bageltech.net>
 License: MIT
 Project-URL: Homepage, https://bageltech.net
-Project-URL: Repository, https://github.com/bageltech/aira-scanner
-Project-URL: Bug Tracker, https://github.com/bageltech/aira-scanner/issues
+Project-URL: Repository, https://github.com/BDB-Labs/aira-scanner
+Project-URL: Bug Tracker, https://github.com/BDB-Labs/aira-scanner/issues
 Keywords: ai,code-quality,static-analysis,governance,ai-safety,audit,constitutional-ai
 Classifier: Development Status :: 4 - Beta
 Classifier: Intended Audience :: Developers
@@ -24,7 +24,7 @@ Requires-Dist: pyyaml>=6.0
 
 # AIRA Scanner — AI-Induced Risk Audit
 
-**Version 1.2.0**  
+**Version 1.2.1**  
 *Bagelle Parris Vargas Consulting | bageltech.net*  
 *Jurisprudential AI Governance Initiative*
 
@@ -52,10 +52,16 @@ pip install aira-scanner
 
 ```bash
 brew tap BDB-Labs/aira-scanner https://github.com/BDB-Labs/aira-scanner
-brew install --HEAD BDB-Labs/aira-scanner/aira-scanner
+brew install aira
 ```
 
-The Homebrew formula currently installs the latest `main` branch from this repository.
+For the latest unreleased code:
+
+```bash
+brew install --HEAD aira
+```
+
+Because this repository is not named `homebrew-*`, keep the explicit tap URL in the `brew tap` command above.
 
 **Requirements:** Python 3.9+, PyYAML
 
@@ -197,8 +203,8 @@ export AIRA_SAMPLE_VERSION="2026-03"
 export AIRA_ATTRIBUTION_CLASS="suspected_ai"
 export AIRA_SOURCE_ID="my-org/my-project"
 export AIRA_SOURCE_KIND="repo"
-export AIRA_SCANNER_VERSION="1.2.0"
-export AIRA_RULESET_VERSION="1.2.0"
+export AIRA_SCANNER_VERSION="1.2.1"
+export AIRA_RULESET_VERSION="1.2.1"
 
 # Local/CI backend: newline-delimited JSON
 export AIRA_RESEARCH_JSONL="/absolute/path/to/aira-research.jsonl"

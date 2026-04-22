@@ -16,8 +16,8 @@ notes: Curated public repo sample for internal AIRA benchmarking.
 defaults:
   attribution_class: unknown
   source_kind: repo
-  scanner_version: 1.2.0
-  ruleset_version: 1.2.0
+  scanner_version: 1.2.1
+  ruleset_version: 1.2.1
   scoring_version: fti-v1
 
 samples:

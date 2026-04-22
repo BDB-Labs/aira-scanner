@@ -85,6 +85,17 @@ Early-stage research tool.
 Initial scanner and rule set are live.
 Empirical datasets and expanded detection rules are in progress.
 
+## Install
+
+```bash
+pip install aira-scanner
+```
+
+```bash
+brew tap BDB-Labs/aira-scanner https://github.com/BDB-Labs/aira-scanner
+brew install aira
+```
+
 ## Documentation
 
 For readers who need more than the landing-page overview:

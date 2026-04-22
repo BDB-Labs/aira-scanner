@@ -75,8 +75,8 @@ class CollectorTests(unittest.TestCase):
             "attribution_class": "suspected_ai",
             "source_id": "openai/openai-python",
             "source_kind": "repo",
-            "scanner_version": "1.2.0",
-            "ruleset_version": "1.2.0",
+            "scanner_version": "1.2.1",
+            "ruleset_version": "1.2.1",
             "scoring_version": "fti-v1",
         }
 
