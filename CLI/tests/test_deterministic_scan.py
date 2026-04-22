@@ -1,6 +1,6 @@
 import unittest
 
-from aira.deterministic_scan import scan_inline_source
+from aira.deterministic_scan import scan_inline_source, scan_inline_sources
 
 try:
     import esprima  # type: ignore  # noqa: F401
@@ -50,6 +50,43 @@ class DeterministicScanTests(unittest.TestCase):
     def test_unsupported_language_is_rejected(self):
         with self.assertRaises(ValueError):
             scan_inline_source("print('hello')", "ruby")
+
+    def test_javascript_language_aliases_use_shared_static_scanner(self):
+        for lang in ("js", "jsx", "mjs", "cjs"):
+            with self.subTest(lang=lang):
+                result = scan_inline_source("try { writeAudit(event); } catch (e) { return true; }", lang)
+                self.assertEqual(result["meta"]["language"], "javascript")
+                self.assertEqual(result["checks"]["audit_integrity"], "FAIL")
+                self.assertEqual(result["summary"]["files_scanned"], 1)
+
+    def test_multi_file_deterministic_scan_matches_directory_style_behavior(self):
+        result = scan_inline_sources([
+            {
+                "path": "src/service.py",
+                "code": (
+                    "def save_record(db, record):\n"
+                    "    try:\n"
+                    "        write_audit(record)\n"
+                    "        db.insert(record)\n"
+                    "    except Exception:\n"
+                    "        return True\n"
+                ),
+            },
+            {
+                "path": "tests/test_service.py",
+                "code": (
+                    "def test_save_record_handles_failure():\n"
+                    "    assert save_record(None, None) is True\n"
+                ),
+            },
+        ])
+
+        self.assertEqual(result["summary"]["files_scanned"], 2)
+        self.assertEqual(result["checks"]["success_integrity"], "FAIL")
+        self.assertEqual(result["checks"]["audit_integrity"], "FAIL")
+        self.assertTrue(any(finding["file"] == "src/service.py" for finding in result["findings"]))
+        self.assertTrue(any(finding["file"] == "tests/test_service.py" for finding in result["findings"]))
+        self.assertIn("logic_consistency (C07)", result["summary"]["requires_human_review"])
 
 
 if __name__ == "__main__":

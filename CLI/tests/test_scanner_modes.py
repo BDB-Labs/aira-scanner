@@ -49,7 +49,7 @@ class ScannerModeTests(unittest.TestCase):
 
         coverage_findings = [finding for finding in result.findings if finding["check_id"] == "C14"]
         self.assertEqual(len(coverage_findings), 1)
-        self.assertEqual(Path(coverage_findings[0]["file"]).resolve(), included.resolve())
+        self.assertEqual(coverage_findings[0]["file"], "test_keep.py")
 
     def test_hybrid_falls_back_to_static_when_llm_unavailable(self):
         with tempfile.TemporaryDirectory() as tmpdir:

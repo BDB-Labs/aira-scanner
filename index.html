@@ -523,6 +523,7 @@ def save_record(db, record):
 <script>
 // ── STATE ───────────────────────────────────────────────────────
 let uploadedCode    = '';
+let uploadedFileName = '';
 let lastResult      = null;
 let githubFiles     = [];   // [{path, url, selected}]
 let githubFetched   = {};   // path → content cache
@@ -557,6 +558,7 @@ function handleFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     uploadedCode = e.target.result;
+    uploadedFileName = file.name;
     document.getElementById('upload-filename').textContent = `✓ ${file.name} loaded (${(file.size/1024).toFixed(1)}KB)`;
     document.getElementById('error-panel').classList.remove('show');
     const ext = file.name.split('.').pop().toLowerCase();
@@ -566,6 +568,7 @@ function handleFile(file) {
   reader.onerror = () => {
     showError(`Could not read ${file.name}. Please try again.`);
     uploadedCode = '';
+    uploadedFileName = '';
   };
   reader.readAsText(file);
 }
@@ -681,24 +684,24 @@ async function getGithubCode() {
 
   // Fetch content for selected files (parallel, with cache)
   const fetches = selected.map(async f => {
-    if (githubFetched[f.path]) return `// ── FILE: ${f.path} ──\n${githubFetched[f.path]}`;
+    if (githubFetched[f.path]) return { path: f.path, code: githubFetched[f.path] };
     const res = await fetch(f.url);
-    if (!res.ok) return `// ── FILE: ${f.path} — fetch failed ──\n`;
+    if (!res.ok) return { path: f.path, code: '' };
     const text = await res.text();
     githubFetched[f.path] = text;
-    return `// ── FILE: ${f.path} ──\n${text}`;
+    return { path: f.path, code: text };
   });
 
-  const contents = await Promise.all(fetches);
-  const combined = contents.join('\n\n');
+  const files = await Promise.all(fetches);
+  const combined = files.map(f => `// ── FILE: ${f.path} ──\n${f.code}`).join('\n\n');
 
   // Detect dominant language
   const pyCount = selected.filter(f => f.path.endsWith('.py')).length;
-  const jsCount = selected.filter(f => /\.[jt]sx?$/.test(f.path)).length;
+  const jsCount = selected.filter(f => /\.(?:js|jsx|ts|tsx|mjs|cjs)$/.test(f.path)).length;
   const lang = pyCount >= jsCount ? 'python' : 'javascript';
   document.getElementById('lang-select').value = lang;
 
-  return { code: combined, lang };
+  return { code: combined, lang, files };
 }
 
 // ── LANGUAGE DETECTION ───────────────────────────────────────────
@@ -708,10 +711,15 @@ function detectLanguage(code) {
   return 'python';
 }
 
+function defaultDeterministicPath(lang) {
+  const extMap = { python: '.py', javascript: '.js', typescript: '.ts' };
+  return `snippet${extMap[lang] || '.txt'}`;
+}
+
 // ── MAIN SCAN ────────────────────────────────────────────────────
 async function runScan() {
   const activeTab = document.querySelector('.tab.active').dataset.tab;
-  let code = '', lang = '';
+  let code = '', lang = '', files = null;
 
   // Validate inputs BEFORE touching button state
   if (activeTab === 'paste') {
@@ -729,6 +737,7 @@ async function runScan() {
     }
     const sel = document.getElementById('lang-select').value;
     lang = sel === 'auto' ? detectLanguage(code) : sel;
+    files = [{ path: uploadedFileName || defaultDeterministicPath(lang), code }];
 
   } else if (activeTab === 'github') {
     // For GitHub we need to fetch async — do it after button is in loading state
@@ -771,9 +780,12 @@ async function runScan() {
       const ghResult = await getGithubCode();
       code = ghResult.code;
       lang = ghResult.lang;
+      files = ghResult.files;
+    } else if (activeTab === 'paste') {
+      files = [{ path: defaultDeterministicPath(lang), code }];
     }
 
-    const result = await callAIRAScanner(code, lang);
+    const result = await callAIRAScanner({ code, lang, files });
     clearInterval(labelInterval);
     progress.classList.remove('show');
     renderResults(result);
@@ -868,11 +880,14 @@ function providerLabel(provider) {
   return 'Cloud structured scan';
 }
 
-async function callDeterministicScanner(code, lang) {
+async function callDeterministicScanner(input) {
+  const body = Array.isArray(input?.files) && input.files.length > 0
+    ? { files: input.files, lang: input.lang }
+    : { code: input?.code, lang: input?.lang };
   const response = await fetch('/api/static-scan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, lang })
+    body: JSON.stringify(body)
   });
 
   if (!response.ok) {
@@ -888,12 +903,12 @@ async function callDeterministicScanner(code, lang) {
   });
 }
 
-async function callDeterministicOrBrowserFallback(code, lang, primaryMessage, browserFallbackNote) {
+async function callDeterministicOrBrowserFallback(code, lang, primaryMessage, browserFallbackNote, files = null) {
   try {
     if (primaryMessage) {
       showToast(primaryMessage, 'success');
     }
-    return await callDeterministicScanner(code, lang);
+    return await callDeterministicScanner({ code, lang, files });
   } catch (staticErr) {
     console.warn('Deterministic scan unavailable:', staticErr.message);
     showToast('Server-side deterministic scan unavailable. Falling back to browser heuristics.', 'success');
@@ -905,7 +920,7 @@ async function callDeterministicOrBrowserFallback(code, lang, primaryMessage, br
   }
 }
 
-async function callCloudScanner(code, lang, provider) {
+async function callCloudScanner(input, provider) {
   const systemPrompt = `You are AIRA — the AI-Induced Risk Audit scanner v1.2.
 You audit code for truthful failure handling. Return JSON only.`;
   const response = await fetch('/api/scan', {
@@ -914,7 +929,7 @@ You audit code for truthful failure handling. Return JSON only.`;
     body: JSON.stringify({
       provider,
       system: systemPrompt,
-      prompt: buildPromptForModel(code, lang)
+      prompt: buildPromptForModel(input.code, input.lang)
     })
   });
 
@@ -937,30 +952,32 @@ You audit code for truthful failure handling. Return JSON only.`;
   }
 }
 
-async function callAIRAScanner(code, lang) {
+async function callAIRAScanner(input) {
   const engine = getScanEngine();
   if (engine === 'heuristic') {
     return callDeterministicOrBrowserFallback(
-      code,
-      lang,
+      input.code,
+      input.lang,
       '',
-      'The deterministic static scan was unavailable, so this result comes from browser heuristics. Use this as a triage pass, not a final audit.'
+      'The deterministic static scan was unavailable, so this result comes from browser heuristics. Use this as a triage pass, not a final audit.',
+      input.files
     );
   }
 
   try {
     const provider = engine === 'gemini' ? 'gemini' : 'auto';
-    return await callCloudScanner(code, lang, provider);
+    return await callCloudScanner(input, provider);
   } catch (err) {
     if (engine === 'gemini') {
       throw err;
     }
 
     return callDeterministicOrBrowserFallback(
-      code,
-      lang,
+      input.code,
+      input.lang,
       'Cloud routing unavailable. Falling back to the free deterministic static scan.',
-      'All configured cloud providers were unavailable, so this result comes from browser heuristics after the deterministic static scan also failed.'
+      'All configured cloud providers were unavailable, so this result comes from browser heuristics after the deterministic static scan also failed.',
+      input.files
     );
   }
 }
@@ -986,13 +1003,26 @@ function normalizeScannerResult(raw, meta = {}) {
       check_id: item?.check_id || 'C00',
       check_name: item?.check_name || 'UNSPECIFIED',
       severity: item?.severity === 'HIGH' || item?.severity === 'MEDIUM' || item?.severity === 'LOW' ? item.severity : 'LOW',
+      file: item?.file ? String(item.file) : '',
       line: Number.isFinite(Number(item?.line)) ? Number(item.line) : null,
       description: String(item?.description || 'Finding details unavailable.'),
       snippet: item?.snippet ? String(item.snippet) : ''
     }));
   }
 
-  result.summary = summarizeFindings(result.findings);
+  const computedSummary = summarizeFindings(result.findings);
+  const rawSummary = raw?.summary || {};
+  result.summary = {
+    high: Number.isFinite(Number(rawSummary.high)) ? Number(rawSummary.high) : computedSummary.high,
+    medium: Number.isFinite(Number(rawSummary.medium)) ? Number(rawSummary.medium) : computedSummary.medium,
+    low: Number.isFinite(Number(rawSummary.low)) ? Number(rawSummary.low) : computedSummary.low,
+    total: Number.isFinite(Number(rawSummary.total)) ? Number(rawSummary.total) : computedSummary.total
+  };
+  if (Number.isFinite(Number(rawSummary.files_scanned))) result.summary.files_scanned = Number(rawSummary.files_scanned);
+  if (Number.isFinite(Number(rawSummary.checks_failed))) result.summary.checks_failed = Number(rawSummary.checks_failed);
+  if (Number.isFinite(Number(rawSummary.checks_passed))) result.summary.checks_passed = Number(rawSummary.checks_passed);
+  if (Number.isFinite(Number(rawSummary.checks_unknown))) result.summary.checks_unknown = Number(rawSummary.checks_unknown);
+  if (Array.isArray(rawSummary.requires_human_review)) result.summary.requires_human_review = rawSummary.requires_human_review.map(String);
   return result;
 }
 
@@ -1311,11 +1341,12 @@ function renderResults(result) {
 
   // Severity row
   const h = summary.high || 0, m = summary.medium || 0, l = summary.low || 0;
+  const filesScanned = summary.files_scanned || 0;
   document.getElementById('severity-row').innerHTML = `
     <span class="sev-badge high">● ${h} HIGH</span>
     <span class="sev-badge medium">● ${m} MEDIUM</span>
     <span class="sev-badge low">● ${l} LOW</span>
-    <span style="font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);margin-left:auto">${summary.total || 0} total findings</span>
+    <span style="font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);margin-left:auto">${summary.total || 0} total findings${filesScanned ? ` · ${filesScanned} file${filesScanned === 1 ? '' : 's'} scanned` : ''}</span>
   `;
   document.getElementById('scan-meta').innerHTML = meta.engine_label
     ? `<span class="scan-meta-badge">${escHtml(meta.engine_label)}</span><span class="scan-meta-note">${escHtml(meta.note || '')}</span>`
@@ -1338,11 +1369,11 @@ function renderResults(result) {
       const name = items[0].check_name || cid;
       html += `<div class="finding-group-header">${cid} · ${name}</div>`;
       for (const item of items) {
-        html += `
+      html += `
           <div class="finding-item">
             <span class="finding-sev ${item.severity}">${item.severity}</span>
             <div class="finding-body">
-              ${item.line ? `<div class="finding-location">Line ${item.line}</div>` : ''}
+              ${item.file || item.line ? `<div class="finding-location">${escHtml(item.file || '')}${item.file && item.line ? ' · ' : ''}${item.line ? `Line ${item.line}` : ''}</div>` : ''}
               <div class="finding-desc">${escHtml(item.description)}</div>
               ${item.snippet ? `<div class="finding-snippet">${escHtml(item.snippet)}</div>` : ''}
             </div>

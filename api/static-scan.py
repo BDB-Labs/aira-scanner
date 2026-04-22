@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "CLI"))
 
-from aira.deterministic_scan import scan_inline_source
+from aira.deterministic_scan import scan_inline_source, scan_inline_sources
 
 
 class handler(BaseHTTPRequestHandler):
@@ -39,17 +39,24 @@ class handler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": {"message": "Invalid JSON body."}})
             return
 
-        code = str(body.get("code") or "")
+        files = body.get("files")
         lang = str(body.get("lang") or "")
-        if not code.strip():
-            self._send_json(400, {"error": {"message": "No code supplied for deterministic scan."}})
-            return
-        if not lang.strip():
-            self._send_json(400, {"error": {"message": "No language supplied for deterministic scan."}})
+        if files is not None and not isinstance(files, list):
+            self._send_json(400, {"error": {"message": "Deterministic scan files must be an array."}})
             return
 
         try:
-            result = scan_inline_source(code, lang)
+            if isinstance(files, list) and files:
+                result = scan_inline_sources(files, default_lang=lang)
+            else:
+                code = str(body.get("code") or "")
+                if not code.strip():
+                    self._send_json(400, {"error": {"message": "No code supplied for deterministic scan."}})
+                    return
+                if not lang.strip():
+                    self._send_json(400, {"error": {"message": "No language supplied for deterministic scan."}})
+                    return
+                result = scan_inline_source(code, lang)
         except ValueError as exc:
             self._send_json(400, {"error": {"message": str(exc)}})
             return

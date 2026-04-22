@@ -229,7 +229,11 @@ class AIRAScanner:
                 files_scanned += scanned
 
             _, test_findings = scan_test_files(str(self.target), is_excluded=self._is_excluded_path)
-            findings.extend(test_findings)
+            for finding in test_findings:
+                normalized = dict(finding)
+                if normalized.get("file"):
+                    normalized["file"] = self._display_path(Path(normalized["file"]))
+                findings.append(normalized)
 
         failed_checks = {finding["check_id"] for finding in findings if str(finding.get("check_id", "")).startswith("C")}
         check_results = _default_check_results(files_scanned)
