@@ -5,10 +5,43 @@ from pathlib import Path
 from unittest import mock
 
 from aira.llm import LLMConfig, LLMRoutingError
-from aira.scanner import AIRAScanner
+from aira.scanner import AIRAScanner, ScannerInputError
 
 
 class ScannerModeTests(unittest.TestCase):
+    def test_static_scan_rejects_missing_target(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            missing = Path(tmpdir) / "missing.py"
+            scanner = AIRAScanner(str(missing))
+
+            with self.assertRaises(ScannerInputError) as exc_ctx:
+                scanner.scan(mode="static")
+
+        self.assertIn("Path not found", str(exc_ctx.exception))
+
+    def test_static_scan_rejects_unsupported_single_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir) / "notes.md"
+            target.write_text("# docs only\n", encoding="utf-8")
+            scanner = AIRAScanner(str(target))
+
+            with self.assertRaises(ScannerInputError) as exc_ctx:
+                scanner.scan(mode="static")
+
+        self.assertIn("Unsupported file type", str(exc_ctx.exception))
+
+    def test_static_scan_reports_malformed_python_as_scanner_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir) / "broken.py"
+            target.write_text("def broken(:\n    pass\n", encoding="utf-8")
+
+            result = AIRAScanner(str(target)).scan(mode="static")
+
+        self.assertEqual(result.files_scanned, 1)
+        self.assertEqual(result.findings[0]["check_id"], "SCANNER")
+        self.assertEqual(result.findings[0]["severity"], "HIGH")
+        self.assertIn("Could not parse Python file", result.findings[0]["description"])
+
     def test_static_scan_respects_file_exclude_pattern(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -50,6 +83,22 @@ class ScannerModeTests(unittest.TestCase):
         coverage_findings = [finding for finding in result.findings if finding["check_id"] == "C14"]
         self.assertEqual(len(coverage_findings), 1)
         self.assertEqual(coverage_findings[0]["file"], "test_keep.py")
+
+    def test_static_scan_reports_test_coverage_analysis_failure(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            test_file = root / "test_app.py"
+            test_file.write_text("def test_happy_path():\n    assert True\n", encoding="utf-8")
+
+            scanner = AIRAScanner(str(root))
+            with mock.patch("aira.checkers.test_coverage_checker.analyze_test_file", side_effect=OSError("denied")):
+                result = scanner.scan(mode="static")
+
+        scanner_errors = [finding for finding in result.findings if finding["check_id"] == "SCANNER"]
+        self.assertEqual(len(scanner_errors), 1)
+        self.assertEqual(scanner_errors[0]["severity"], "HIGH")
+        self.assertEqual(scanner_errors[0]["file"], "test_app.py")
+        self.assertIn("Unable to analyze test file", scanner_errors[0]["description"])
 
     def test_hybrid_falls_back_to_static_when_llm_unavailable(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -122,6 +171,40 @@ class ScannerModeTests(unittest.TestCase):
         self.assertEqual(result.metadata["model"], "gpt-oss-120b")
         self.assertEqual(result.check_results["logic_consistency"], "UNKNOWN")
         self.assertEqual(result.findings[0]["check_id"], "C05")
+
+    def test_llm_mode_tolerates_malformed_finding_fields(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir) / "sample.py"
+            target.write_text("print('hello')\n", encoding="utf-8")
+
+            scanner = AIRAScanner(str(target))
+            fake_response = {
+                "provider": "openai-compatible",
+                "model": "gpt-oss-120b",
+                "text": json.dumps(
+                    {
+                        "ai_failure_audit": [],
+                        "findings": [
+                            "not an object",
+                            {
+                                "check_id": "C05",
+                                "check_name": "BYPASS / OVERRIDE PATHS",
+                                "severity": "MEDIUM",
+                                "file": "sample.py",
+                                "line": "not-a-line",
+                                "description": "Potential bypass detected.",
+                            },
+                        ],
+                    }
+                ),
+            }
+
+            with mock.patch("aira.scanner.run_llm_json_audit", return_value=fake_response):
+                result = scanner.scan(mode="llm", llm_config=LLMConfig(provider="openai-compatible", model="gpt-oss-120b"))
+
+        self.assertEqual(result.findings[0]["check_id"], "C05")
+        self.assertEqual(result.findings[0]["line"], 0)
+        self.assertEqual(result.check_results["success_integrity"], "PASS")
 
     def test_llm_mode_drops_human_review_only_findings(self):
         with tempfile.TemporaryDirectory() as tmpdir:

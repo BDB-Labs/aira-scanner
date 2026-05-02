@@ -109,6 +109,21 @@ def analyze_test_file(filepath: str) -> TestCoverageReport:
     )
 
 
+def _scanner_error_finding(filepath: str, exc: Exception) -> dict:
+    return {
+        "check_id": "SCANNER",
+        "check_name": "SCANNER ERROR",
+        "severity": "HIGH",
+        "file": filepath,
+        "line": 0,
+        "description": (
+            f"Unable to analyze test file: {exc}. "
+            "Fix this file or exclude it before relying on scan results."
+        ),
+        "snippet": "",
+    }
+
+
 def scan_test_files(root: str, *, is_excluded: Optional[Callable[[Path], bool]] = None) -> Tuple[List[TestCoverageReport], List[dict]]:
     """Scan all test files under root and return reports + findings."""
     reports = []
@@ -121,8 +136,8 @@ def scan_test_files(root: str, *, is_excluded: Optional[Callable[[Path], bool]] 
                 report = analyze_test_file(str(root_path))
                 reports.append(report)
                 all_findings.extend(report.flagged_findings)
-            except Exception:
-                pass
+            except Exception as exc:
+                all_findings.append(_scanner_error_finding(str(root_path), exc))
         return reports, all_findings
 
     for dirpath, dirnames, filenames in os.walk(root_path):
@@ -137,7 +152,7 @@ def scan_test_files(root: str, *, is_excluded: Optional[Callable[[Path], bool]] 
                     report = analyze_test_file(str(path))
                     reports.append(report)
                     all_findings.extend(report.flagged_findings)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    all_findings.append(_scanner_error_finding(str(path), exc))
 
     return reports, all_findings

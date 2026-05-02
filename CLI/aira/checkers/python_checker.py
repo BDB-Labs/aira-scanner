@@ -34,13 +34,24 @@ class PythonChecker:
         try:
             self.tree = ast.parse(self.source)
             self.parse_ok = True
-        except SyntaxError:
+            self.parse_error = None
+        except SyntaxError as exc:
             self.tree = None
             self.parse_ok = False
+            self.parse_error = exc
         self.findings: List[Finding] = []
 
     def run(self) -> List[Finding]:
         if not self.parse_ok:
+            line = getattr(self.parse_error, "lineno", 1) or 1
+            message = getattr(self.parse_error, "msg", "invalid syntax")
+            self._add(
+                "SCANNER",
+                "SCANNER ERROR",
+                "HIGH",
+                line,
+                f"Could not parse Python file: {message}. Fix syntax before relying on scan results.",
+            )
             return self.findings
         self._check_broad_exception_suppression()
         self._check_success_integrity()

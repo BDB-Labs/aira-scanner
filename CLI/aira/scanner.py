@@ -69,6 +69,18 @@ LLM_SYSTEM_PROMPT = (
 )
 
 
+class AIRAScannerError(RuntimeError):
+    """Base error for scanner failures that should be shown cleanly by the CLI."""
+
+
+class ScannerInputError(AIRAScannerError, ValueError):
+    """Raised when the requested scan target or options cannot produce a valid scan."""
+
+
+class ScannerExecutionError(AIRAScannerError):
+    """Raised when scanning starts but an operational dependency fails."""
+
+
 @dataclass
 class ScanResult:
     target: str
@@ -119,11 +131,22 @@ def _normalize_findings(findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "check_name": finding.get("check_name", "UNSPECIFIED"),
             "severity": finding.get("severity", "LOW") if finding.get("severity") in {"HIGH", "MEDIUM", "LOW"} else "LOW",
             "file": finding.get("file", ""),
-            "line": int(finding.get("line", 0) or 0),
+            "line": _coerce_line_number(finding.get("line", 0)),
             "description": str(finding.get("description", "")),
             "snippet": str(finding.get("snippet", "") or ""),
         })
     return sorted(normalized, key=lambda item: (severity_rank.get(item["severity"], 3), item["file"], item["line"], item["check_id"]))
+
+
+def _coerce_line_number(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def supported_extensions_label() -> str:
+    return ", ".join(sorted(SUPPORTED_EXTENSIONS))
 
 
 def _build_result(
@@ -192,7 +215,8 @@ class AIRAScanner:
 
     def scan(self, mode: str = "static", llm_config: Optional[LLMConfig] = None) -> ScanResult:
         if mode not in {"static", "llm", "hybrid"}:
-            raise ValueError(f"Unsupported scan mode: {mode}")
+            raise ScannerInputError(f"Unsupported scan mode: {mode}")
+        self._files_to_scan()
 
         if mode == "static":
             return self._scan_static()
@@ -217,17 +241,13 @@ class AIRAScanner:
         findings: List[Dict[str, Any]] = []
         files_scanned = 0
 
-        if self.target.is_file():
-            if not self._is_excluded_path(self.target):
-                file_findings, scanned = self._scan_static_file(self.target)
-                findings.extend(file_findings)
-                files_scanned += scanned
-        else:
-            for filepath in self._iter_supported_files():
-                file_findings, scanned = self._scan_static_file(filepath)
-                findings.extend(file_findings)
-                files_scanned += scanned
+        files = self._files_to_scan()
+        for filepath in files:
+            file_findings, scanned = self._scan_static_file(filepath)
+            findings.extend(file_findings)
+            files_scanned += scanned
 
+        if self.target.is_dir():
             _, test_findings = scan_test_files(str(self.target), is_excluded=self._is_excluded_path)
             for finding in test_findings:
                 normalized = dict(finding)
@@ -271,16 +291,46 @@ class AIRAScanner:
                 for item in checker.run()
             ]
             return findings, 1
+        except OSError as exc:
+            return [self._scanner_error_finding(filepath, f"Unable to read file: {exc}")], 1
         except Exception as exc:
-            return [{
-                "check_id": "SCANNER",
-                "check_name": "SCANNER ERROR",
-                "severity": "LOW",
-                "file": self._display_path(filepath),
-                "line": 0,
-                "description": f"Scanner failed on file: {exc}",
-                "snippet": "",
-            }], 1
+            return [self._scanner_error_finding(filepath, f"Scanner failed on file: {exc}")], 1
+
+    def _scanner_error_finding(self, filepath: Path, description: str, line: int = 0) -> Dict[str, Any]:
+        return {
+            "check_id": "SCANNER",
+            "check_name": "SCANNER ERROR",
+            "severity": "HIGH",
+            "file": self._display_path(filepath),
+            "line": line,
+            "description": f"{description}. Fix this file or exclude it before relying on scan results.",
+            "snippet": "",
+        }
+
+    def _files_to_scan(self) -> List[Path]:
+        if not self.target.exists():
+            raise ScannerInputError(f"Path not found: {self.target}")
+        if self.target.is_file():
+            if self._is_excluded_path(self.target):
+                raise ScannerInputError(
+                    f"Target is excluded by built-in skip directories or configured --exclude patterns: {self.target}"
+                )
+            if self.target.suffix.lower() not in SUPPORTED_EXTENSIONS:
+                raise ScannerInputError(
+                    f"Unsupported file type for scan: {self.target}. Supported extensions: {supported_extensions_label()}"
+                )
+            return [self.target]
+        if not self.target.is_dir():
+            raise ScannerInputError(f"Target must be a file or directory: {self.target}")
+
+        files = self._iter_supported_files()
+        if not files:
+            raise ScannerInputError(
+                f"No supported source files found in directory: {self.target}. "
+                f"Supported extensions: {supported_extensions_label()}. "
+                "Check the path and --exclude patterns."
+            )
+        return files
 
     def _display_path(self, filepath: Path) -> str:
         if self.target.is_file():
@@ -342,14 +392,17 @@ class AIRAScanner:
         return result
 
     def _build_llm_input(self, max_context_chars: int) -> Tuple[str, int, bool]:
-        files = [self.target] if self.target.is_file() else self._iter_supported_files()
+        files = self._files_to_scan()
         sections: List[str] = []
         total_chars = 0
         truncated = False
 
         for filepath in files:
             rel_path = filepath.name if self.target.is_file() else str(filepath.relative_to(self.target))
-            content = filepath.read_text(encoding="utf-8", errors="replace")
+            try:
+                content = filepath.read_text(encoding="utf-8", errors="replace")
+            except OSError as exc:
+                raise ScannerExecutionError(f"Unable to read {rel_path}: {exc}") from exc
             section = f"# FILE: {rel_path}\n{content}\n"
             if total_chars + len(section) <= max_context_chars:
                 sections.append(section)
@@ -423,8 +476,12 @@ Code snapshot:
             raw = json.loads(response["text"])
         except Exception as exc:
             raise LLMRoutingError(f"LLM returned invalid JSON: {exc}") from exc
+        if not isinstance(raw, dict):
+            raise LLMRoutingError("LLM returned JSON that is not an object.")
 
         raw_checks = raw.get("ai_failure_audit") or {}
+        if not isinstance(raw_checks, dict):
+            raw_checks = {}
         check_results = _default_check_results(files_scanned)
         for _, (key, _) in CHECKS.items():
             value = raw_checks.get(key)
@@ -435,6 +492,8 @@ Code snapshot:
 
         findings = []
         for item in raw.get("findings", []) if isinstance(raw.get("findings"), list) else []:
+            if not isinstance(item, dict):
+                continue
             check_id = item.get("check_id", "")
             normalized_check_id = check_id or CHECK_ID_BY_KEY.get(item.get("check_key", ""), "C00")
             if normalized_check_id in {"C07", "C12"}:
@@ -445,7 +504,7 @@ Code snapshot:
                 "check_name": check_name,
                 "severity": item.get("severity", "LOW"),
                 "file": str(item.get("file", "") or ""),
-                "line": int(item.get("line", 0) or 0),
+                "line": _coerce_line_number(item.get("line", 0)),
                 "description": str(item.get("description", "")),
                 "snippet": str(item.get("snippet", "") or ""),
             })
