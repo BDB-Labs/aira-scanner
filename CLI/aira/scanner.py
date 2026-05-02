@@ -58,6 +58,67 @@ SUPPORTED_EXTENSIONS = {
     ".cjs": "javascript",
 }
 
+
+class ScanTargetError(ValueError):
+    """Raised when a path cannot be scanned (missing, wrong type, no matching files, etc.)."""
+
+
+def supported_extensions_hint() -> str:
+    """Comma-separated list of file extensions scanned in static/hybrid modes."""
+    return ", ".join(sorted(SUPPORTED_EXTENSIONS))
+
+
+def validate_scan_target(path: Path) -> None:
+    """
+    Validate that ``path`` can be scanned before starting work.
+
+    Raises:
+        ScanTargetError: If the path is missing, not a file/directory, or a single file with an unsupported extension.
+    """
+    try:
+        resolved = path.expanduser().resolve(strict=False)
+    except OSError as exc:
+        raise ScanTargetError(f"Cannot resolve path {path}: {exc}") from exc
+
+    if not resolved.exists():
+        raise ScanTargetError(
+            f"Path does not exist or is not reachable: {resolved}. "
+            "Check the spelling, symlinks, and filesystem permissions."
+        )
+    if not resolved.is_file() and not resolved.is_dir():
+        raise ScanTargetError(f"Not a file or directory: {resolved}")
+
+    if resolved.is_file():
+        ext = resolved.suffix.lower()
+        if ext not in SUPPORTED_EXTENSIONS:
+            raise ScanTargetError(
+                f"Unsupported file type for single-file scan ({ext or 'no extension'}). "
+                f"Supported extensions: {supported_extensions_hint()}. "
+                "Scan a directory to include multiple languages, or convert/add a supported source file."
+            )
+
+
+def describe_empty_scan_result(scanner: "AIRAScanner", files_scanned: int) -> Optional[str]:
+    """If ``files_scanned`` is zero, return a user-facing explanation; otherwise ``None``."""
+    if files_scanned > 0:
+        return None
+    if scanner.target.is_file():
+        if scanner.is_target_excluded_from_static_scan():
+            return (
+                "The scan target file matches an --exclude pattern, so nothing was analyzed. "
+                "Remove or narrow --exclude patterns to include this file."
+            )
+        return (
+            "No files were analyzed. If you see this message, report it as a bug; "
+            "the CLI should reject unsupported single-file targets before scanning."
+        )
+    return (
+        f"No scannable source files found under {scanner.target}. "
+        f"Supported extensions: {supported_extensions_hint()}. "
+        "The tree may contain only unsupported file types, or --exclude may be filtering all matches."
+    )
+
+
 SKIP_DIRS = {
     ".git", "node_modules", "__pycache__", ".venv", "venv",
     "env", "dist", "build", ".tox", "coverage", ".mypy_cache",
@@ -189,6 +250,10 @@ class AIRAScanner:
     def __init__(self, target: str, exclude_dirs: Optional[List[str]] = None):
         self.target = Path(target).resolve()
         self.exclude_patterns = tuple(item.strip() for item in (exclude_dirs or []) if item.strip())
+
+    def is_target_excluded_from_static_scan(self) -> bool:
+        """Whether the scan root path is excluded by built-in skips or user --exclude patterns."""
+        return self._is_excluded_path(self.target)
 
     def scan(self, mode: str = "static", llm_config: Optional[LLMConfig] = None) -> ScanResult:
         if mode not in {"static", "llm", "hybrid"}:

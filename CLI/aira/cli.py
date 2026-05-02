@@ -15,7 +15,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from aira.llm import LLMConfig, LLMRoutingError, provider_health_snapshot
 from aira.collector import collect_public_repos
 from aira.research import ResearchSubmissionError, check_research_connection, submit_aggregate_research
-from aira.scanner import AIRAScanner, result_to_json, result_to_yaml
+from aira.scanner import (
+    AIRAScanner,
+    ScanTargetError,
+    describe_empty_scan_result,
+    result_to_json,
+    result_to_yaml,
+    validate_scan_target,
+)
 
 
 class C:
@@ -32,6 +39,12 @@ class C:
 SEVERITY_COLOR = {"HIGH": C.RED, "MEDIUM": C.YELLOW, "LOW": C.DIM}
 STATUS_COLOR = {"PASS": C.GREEN, "FAIL": C.RED, "UNKNOWN": C.YELLOW}
 FAIL_THRESHOLD = {"none": None, "low": {"LOW", "MEDIUM", "HIGH"}, "medium": {"MEDIUM", "HIGH"}, "high": {"HIGH"}}
+
+# Exit codes: 1 = scan findings exceeded --fail-on; 2 = LLM/research/collection operational failure;
+# 3 = invalid input / nothing scannable / output path errors (distinct from findings for automation).
+EXIT_FINDINGS_THRESHOLD = 1
+EXIT_OPERATIONAL_FAILURE = 2
+EXIT_INPUT_OR_USAGE = 3
 
 BANNER = f"""
 {C.BOLD}{C.BLUE}  ╔═══════════════════════════════════════╗
@@ -267,12 +280,41 @@ def print_research_submission_error(message: str) -> None:
     print(f"{C.RED}Research submission failed: {message}{C.RESET}", file=sys.stderr)
 
 
+def positive_int(flag_label: str):
+    """Argparse type factory: require a positive base-10 integer."""
+
+    def converter(value: str) -> int:
+        try:
+            parsed = int(value, 10)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(f"{flag_label} must be an integer") from exc
+        if parsed <= 0:
+            raise argparse.ArgumentTypeError(f"{flag_label} must be a positive integer")
+        return parsed
+
+    return converter
+
+
+def write_text_output(out_file: str, content: str) -> None:
+    """Write CLI output; raises ScanTargetError on missing parent dir or OS-level write failures."""
+    path = Path(out_file).expanduser()
+    parent = path.parent
+    if not parent.exists():
+        raise ScanTargetError(
+            f"Output directory does not exist: {parent}. Create it first or choose another --out-file path."
+        )
+    try:
+        path.write_text(content, encoding="utf-8")
+    except OSError as exc:
+        raise ScanTargetError(f"Could not write output file {path}: {exc}") from exc
+
+
 def exit_code_for_result(result, fail_on: str) -> int:
     threshold = FAIL_THRESHOLD[fail_on]
     if threshold is None:
         return 0
     if any(finding["severity"] in threshold for finding in result.findings):
-        return 1
+        return EXIT_FINDINGS_THRESHOLD
     return 0
 
 
@@ -286,8 +328,18 @@ def add_llm_arguments(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--model", help="Override provider model name")
     parser.add_argument("--base-url", help="Base URL for openai-compatible endpoints")
-    parser.add_argument("--timeout", type=int, default=45, help="HTTP timeout for provider-assisted scans")
-    parser.add_argument("--max-context-chars", type=int, default=120_000, help="Maximum source characters sent to LLM scans")
+    parser.add_argument(
+        "--timeout",
+        type=positive_int("--timeout"),
+        default=45,
+        help="HTTP timeout for provider-assisted scans",
+    )
+    parser.add_argument(
+        "--max-context-chars",
+        type=positive_int("--max-context-chars"),
+        default=120_000,
+        help="Maximum source characters sent to LLM scans",
+    )
 
 
 def add_research_arguments(parser: argparse.ArgumentParser) -> None:
@@ -297,7 +349,12 @@ def add_research_arguments(parser: argparse.ArgumentParser) -> None:
         help="Submit aggregate-only scan metrics to the configured research backend",
     )
     parser.add_argument("--research-source", help="Override the source label used for research submission")
-    parser.add_argument("--research-timeout", type=int, default=15, help="HTTP timeout for research backend submission")
+    parser.add_argument(
+        "--research-timeout",
+        type=positive_int("--research-timeout"),
+        default=15,
+        help="HTTP timeout for research backend submission",
+    )
     parser.add_argument("--sample-name", help="Stable sample stream name for research schema v2 submissions")
     parser.add_argument("--sample-version", default=None, help="Sample version label for research schema v2 submissions")
     parser.add_argument(
@@ -317,7 +374,7 @@ def add_research_arguments(parser: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="aira", description="AIRA — AI-Induced Risk Audit scanner")
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
     scan_parser = subparsers.add_parser("scan", help="Scan a file or directory")
     scan_parser.add_argument("target", help="File or directory to scan")
@@ -343,7 +400,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Verify research backend connectivity (Supabase preferred; --check-airtable kept as legacy alias)",
     )
-    health_parser.add_argument("--research-timeout", type=int, default=10, help="HTTP timeout for research connectivity checks")
+    health_parser.add_argument(
+        "--research-timeout",
+        type=positive_int("--research-timeout"),
+        default=10,
+        help="HTTP timeout for research connectivity checks",
+    )
     add_llm_arguments(health_parser)
 
     providers_parser = subparsers.add_parser("providers", help="List supported providers and env vars")
@@ -356,7 +418,12 @@ def build_parser() -> argparse.ArgumentParser:
     collect_parser.add_argument("--out-file", "-f", help="Write collection summary to file instead of stdout", default=None)
     collect_parser.add_argument("--exclude", "-e", help="Comma-separated list of directories, files, or glob patterns to exclude", default="")
     collect_parser.add_argument("--submit-research-aggregate", action="store_true", help="Submit collected aggregate results to the configured research backend")
-    collect_parser.add_argument("--research-timeout", type=int, default=15, help="HTTP timeout for research backend submission")
+    collect_parser.add_argument(
+        "--research-timeout",
+        type=positive_int("--research-timeout"),
+        default=15,
+        help="HTTP timeout for research backend submission",
+    )
     collect_parser.add_argument("--keep-repos", action="store_true", help="Keep cloned repos on disk after collection")
     collect_parser.add_argument("--checkout-root", help="Directory where repos should be cloned")
     add_llm_arguments(collect_parser)
@@ -368,20 +435,34 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "scan":
-        target = Path(args.target)
-        if not target.exists():
-            print(f"{C.RED}Error: Path not found: {target}{C.RESET}", file=sys.stderr)
-            sys.exit(1)
+        target_arg = Path(args.target).expanduser()
+        try:
+            validate_scan_target(target_arg)
+        except ScanTargetError as exc:
+            print(f"{C.RED}Invalid scan target: {exc}{C.RESET}", file=sys.stderr)
+            sys.exit(EXIT_INPUT_OR_USAGE)
 
+        resolved_target = target_arg.resolve(strict=False)
         exclude = [item.strip() for item in args.exclude.split(",") if item.strip()]
         llm_config = build_llm_config(args)
-        scanner = AIRAScanner(str(target), exclude_dirs=exclude)
+        scanner = AIRAScanner(str(resolved_target), exclude_dirs=exclude)
 
         try:
             result = scanner.scan(mode=args.engine, llm_config=llm_config)
         except LLMRoutingError as exc:
             print(f"{C.RED}LLM scan failed: {exc}{C.RESET}", file=sys.stderr)
-            sys.exit(2)
+            sys.exit(EXIT_OPERATIONAL_FAILURE)
+        except ScanTargetError as exc:
+            print(f"{C.RED}Scan aborted: {exc}{C.RESET}", file=sys.stderr)
+            sys.exit(EXIT_INPUT_OR_USAGE)
+        except Exception as exc:
+            print(f"{C.RED}Scan failed unexpectedly: {exc}{C.RESET}", file=sys.stderr)
+            sys.exit(EXIT_OPERATIONAL_FAILURE)
+
+        empty_reason = describe_empty_scan_result(scanner, result.files_scanned)
+        if empty_reason:
+            print(f"{C.RED}Cannot complete scan: {empty_reason}{C.RESET}", file=sys.stderr)
+            sys.exit(EXIT_INPUT_OR_USAGE)
 
         research_response = None
         if args.submit_research_aggregate:
@@ -400,11 +481,11 @@ def main() -> None:
                 )
             except ResearchSubmissionError as exc:
                 print_research_submission_error(str(exc))
-                sys.exit(2)
+                sys.exit(EXIT_OPERATIONAL_FAILURE)
 
         if args.output == "terminal":
             print_banner()
-            print(f"  Scanning: {C.BOLD}{target}{C.RESET}")
+            print(f"  Scanning: {C.BOLD}{resolved_target}{C.RESET}")
             print(f"  {'─'*50}")
             print_summary(result)
             print_check_results(result)
@@ -415,7 +496,11 @@ def main() -> None:
         else:
             output = result_to_yaml(result) if args.output == "yaml" else result_to_json(result)
             if args.out_file:
-                Path(args.out_file).write_text(output, encoding="utf-8")
+                try:
+                    write_text_output(args.out_file, output)
+                except ScanTargetError as exc:
+                    print(f"{C.RED}Output error: {exc}{C.RESET}", file=sys.stderr)
+                    sys.exit(EXIT_INPUT_OR_USAGE)
             else:
                 print(output)
             if research_response is not None:
@@ -473,22 +558,30 @@ def main() -> None:
             )
         except (ValueError, ResearchSubmissionError, LLMRoutingError) as exc:
             print(f"{C.RED}Collection failed: {exc}{C.RESET}", file=sys.stderr)
-            sys.exit(2)
+            sys.exit(EXIT_OPERATIONAL_FAILURE)
 
         output = json.dumps(summary, indent=2) if args.output == "json" else None
         if args.output == "json":
             if args.out_file:
-                Path(args.out_file).write_text(output, encoding="utf-8")
+                try:
+                    write_text_output(args.out_file, output)
+                except ScanTargetError as exc:
+                    print(f"{C.RED}Output error: {exc}{C.RESET}", file=sys.stderr)
+                    sys.exit(EXIT_INPUT_OR_USAGE)
             else:
                 print(output)
         else:
             print_banner()
             print_collection_summary(summary)
             if args.out_file:
-                Path(args.out_file).write_text(json.dumps(summary, indent=2), encoding="utf-8")
-        sys.exit(0 if summary.get("ok") else 2)
+                try:
+                    write_text_output(args.out_file, json.dumps(summary, indent=2))
+                except ScanTargetError as exc:
+                    print(f"{C.RED}Output error: {exc}{C.RESET}", file=sys.stderr)
+                    sys.exit(EXIT_INPUT_OR_USAGE)
+        sys.exit(0 if summary.get("ok") else EXIT_OPERATIONAL_FAILURE)
 
-    parser.print_help()
+    raise AssertionError(f"unhandled command {args.command!r}")
 
 
 if __name__ == "__main__":
